@@ -1,13 +1,13 @@
 //
-//  YGShortVideoWriter.m
+//  YGShortVideoWriter.h
 //  DevelopWriterDemo
 //
 //  Created by jiangxincai on 16/1/14.
 //  Copyright © 2016年 pepsikirk. All rights reserved.
 //
 
-#import "YGShortVideoWriter.h"
+#import <Foundation/Foundation.h>
 
-@implementation YGShortVideoWriter
+@interface PKShortVideoWriter : NSObject
 
 @end

@@ -10,6 +10,8 @@
 
 @interface PKShortVideoViewController : UIViewController
 
+@property (nonatomic, assign) NSTimeInterval videoMaxTime;
+
 - (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL outputSize:(CGSize)outputSize;
 
 @end

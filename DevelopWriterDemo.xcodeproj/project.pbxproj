@@ -8,7 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		881096DF1C47A01900A99726 /* PKShortVideoViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 881096DE1C47A01900A99726 /* PKShortVideoViewController.m */; };
-		881096E21C47A86B00A99726 /* YGShortVideoWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 881096E11C47A86B00A99726 /* YGShortVideoWriter.m */; };
+		881096E21C47A86B00A99726 /* PKShortVideoWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 881096E11C47A86B00A99726 /* PKShortVideoWriter.m */; };
+		88382D3A1C48C73E00AB8709 /* PKShortVideoProgressBar.m in Sources */ = {isa = PBXBuildFile; fileRef = 88382D391C48C73E00AB8709 /* PKShortVideoProgressBar.m */; };
 		88AA24AB1C465AF0001B629F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 88AA24AA1C465AF0001B629F /* main.m */; };
 		88AA24AE1C465AF0001B629F /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 88AA24AD1C465AF0001B629F /* AppDelegate.m */; };
 		88AA24B11C465AF0001B629F /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 88AA24B01C465AF0001B629F /* ViewController.m */; };
@@ -39,8 +40,10 @@
 /* Begin PBXFileReference section */
 		881096DD1C47A01900A99726 /* PKShortVideoViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKShortVideoViewController.h; path = PKShortVideoWriter/PKShortVideoViewController.h; sourceTree = "<group>"; };
 		881096DE1C47A01900A99726 /* PKShortVideoViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKShortVideoViewController.m; path = PKShortVideoWriter/PKShortVideoViewController.m; sourceTree = "<group>"; };
-		881096E01C47A86B00A99726 /* YGShortVideoWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = YGShortVideoWriter.h; path = PKShortVideoWriter/YGShortVideoWriter.h; sourceTree = "<group>"; };
-		881096E11C47A86B00A99726 /* YGShortVideoWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = YGShortVideoWriter.m; path = PKShortVideoWriter/YGShortVideoWriter.m; sourceTree = "<group>"; };
+		881096E01C47A86B00A99726 /* PKShortVideoWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKShortVideoWriter.h; path = PKShortVideoWriter/PKShortVideoWriter.h; sourceTree = "<group>"; };
+		881096E11C47A86B00A99726 /* PKShortVideoWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKShortVideoWriter.m; path = PKShortVideoWriter/PKShortVideoWriter.m; sourceTree = "<group>"; };
+		88382D381C48C73E00AB8709 /* PKShortVideoProgressBar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKShortVideoProgressBar.h; path = PKShortVideoWriter/PKShortVideoProgressBar.h; sourceTree = "<group>"; };
+		88382D391C48C73E00AB8709 /* PKShortVideoProgressBar.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKShortVideoProgressBar.m; path = PKShortVideoWriter/PKShortVideoProgressBar.m; sourceTree = "<group>"; };
 		88AA24A61C465AF0001B629F /* DevelopWriterDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DevelopWriterDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		88AA24AA1C465AF0001B629F /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		88AA24AC1C465AF0001B629F /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -89,8 +92,10 @@
 			children = (
 				881096DD1C47A01900A99726 /* PKShortVideoViewController.h */,
 				881096DE1C47A01900A99726 /* PKShortVideoViewController.m */,
-				881096E01C47A86B00A99726 /* YGShortVideoWriter.h */,
-				881096E11C47A86B00A99726 /* YGShortVideoWriter.m */,
+				881096E01C47A86B00A99726 /* PKShortVideoWriter.h */,
+				881096E11C47A86B00A99726 /* PKShortVideoWriter.m */,
+				88382D381C48C73E00AB8709 /* PKShortVideoProgressBar.h */,
+				88382D391C48C73E00AB8709 /* PKShortVideoProgressBar.m */,
 			);
 			name = YGShortVideoWriter;
 			sourceTree = "<group>";
@@ -292,7 +297,8 @@
 				88AA24B11C465AF0001B629F /* ViewController.m in Sources */,
 				88AA24AE1C465AF0001B629F /* AppDelegate.m in Sources */,
 				88AA24AB1C465AF0001B629F /* main.m in Sources */,
-				881096E21C47A86B00A99726 /* YGShortVideoWriter.m in Sources */,
+				88382D3A1C48C73E00AB8709 /* PKShortVideoProgressBar.m in Sources */,
+				881096E21C47A86B00A99726 /* PKShortVideoWriter.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
