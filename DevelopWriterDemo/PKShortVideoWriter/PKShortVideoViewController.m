@@ -10,6 +10,7 @@
 #import "PKShortVideoWriter.h"
 #import "PKShortVideoProgressBar.h"
 #import "PKUtiltiies.h"
+#import <AVFoundation/AVFoundation.h>
 
 static CGFloat PKAllButtonVarticalHeight = 0;
 static CGFloat PKPreviewLayerHeight = 0;
@@ -71,10 +72,20 @@ static CGFloat const PKRecordButtonWidth = 80;
     
     [toolbar setItems:@[cancelItem,flexible,transformItem]];
     
+    NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
+    NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mp4"]];
+    
+    self.writer = [[PKShortVideoWriter alloc] initWithOutputFileURL:[NSURL fileURLWithPath:outputFilePath] outputSize:CGSizeMake(320, 240)];
+    
+    AVCaptureVideoPreviewLayer *previewLayer = [self.writer previewLayer];
+    previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    previewLayer.frame = CGRectMake(0, 0, kScreenWidth, PKPreviewLayerHeight);
+    [self.view.layer insertSublayer:previewLayer atIndex:0];
+    
     self.recordButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.recordButton setTitle:@"按住录" forState:UIControlStateNormal];
     [self.recordButton setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
-    self.recordButton.titleLabel.font = [UIFont systemFontOfSize:14.0f];
+    self.recordButton.titleLabel.font = [UIFont systemFontOfSize:15.0f];
     self.recordButton.frame = CGRectMake(0, 0, PKRecordButtonWidth, PKRecordButtonWidth);
     self.recordButton.center = CGPointMake(kScreenWidth/2, PKAllButtonVarticalHeight);
     self.recordButton.layer.cornerRadius = PKRecordButtonWidth/2;
@@ -82,14 +93,18 @@ static CGFloat const PKRecordButtonWidth = 80;
     self.recordButton.layer.borderColor = [UIColor redColor].CGColor;
     self.recordButton.layer.masksToBounds = YES;
     [self.view addSubview:self.recordButton];
-}
-
-- (void)cancelShoot {
-    [self dismissViewControllerAnimated:YES completion:nil];
-}
-
-- (void)transfromCamera {
     
+    self.playButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [self.playButton setImage:[UIImage imageNamed:@"Play"] forState:UIControlStateNormal];
+    [self.playButton sizeToFit];
+    self.playButton.center = CGPointMake(kScreenWidth/4, PKAllButtonVarticalHeight);
+    [self.view addSubview:self.playButton];
+    
+    self.refreshButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [self.refreshButton setImage:[UIImage imageNamed:@"Refresh"] forState:UIControlStateNormal];
+    [self.refreshButton sizeToFit];
+    self.refreshButton.center = CGPointMake(kScreenWidth/4 *3, PKAllButtonVarticalHeight);
+    [self.view addSubview:self.refreshButton];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -99,6 +114,18 @@ static CGFloat const PKRecordButtonWidth = 80;
 
 - (BOOL)prefersStatusBarHidden {
     return YES;
+}
+
+
+
+#pragma mark - Private 
+
+- (void)cancelShoot {
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (void)transfromCamera {
+    
 }
 
 @end
