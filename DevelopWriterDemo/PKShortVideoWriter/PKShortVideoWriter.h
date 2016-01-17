@@ -1,5 +1,5 @@
 //
-//  YGShortVideoWriter.h
+//  PKShortVideoWriter.h
 //  DevelopWriterDemo
 //
 //  Created by jiangxincai on 16/1/14.

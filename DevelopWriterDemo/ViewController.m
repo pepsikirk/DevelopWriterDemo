@@ -36,7 +36,8 @@
     NSString *path = [paths[0] stringByAppendingPathComponent:[@"PKShortVideo" stringByAppendingPathExtension:@"mp4"]];
     
     PKShortVideoViewController *viewController = [[PKShortVideoViewController alloc] initWithOutputFileURL:[NSURL fileURLWithPath:path] outputSize:CGSizeMake(320, 240)];
-    [self.navigationController pushViewController:viewController animated:YES];
+
+    [self presentViewController:viewController animated:YES completion:nil];
 }
 
 @end
