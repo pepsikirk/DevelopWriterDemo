@@ -105,6 +105,7 @@ static CGFloat const PKRecordButtonWidth = 80;
     [self.refreshButton sizeToFit];
     self.refreshButton.center = CGPointMake(kScreenWidth/4 *3, PKAllButtonVarticalHeight);
     [self.view addSubview:self.refreshButton];
+    
 }
 
 - (void)didReceiveMemoryWarning {
@@ -126,6 +127,58 @@ static CGFloat const PKRecordButtonWidth = 80;
 
 - (void)transfromCamera {
     
+}
+
+- (void)recordButtonTarget {
+    [self.recordButton removeTarget:self action:NULL forControlEvents:UIControlEventAllEvents];
+    [self.recordButton addTarget:self action:@selector(toggleRecording) forControlEvents:UIControlEventTouchDown];
+    [self.recordButton addTarget:self action:@selector(buttonStopRecording) forControlEvents:UIControlEventTouchUpInside|UIControlEventTouchUpOutside];
+}
+
+- (void)sendButtonTarget {
+    [self.recordButton removeTarget:self action:NULL forControlEvents:UIControlEventAllEvents];
+    [self.recordButton addTarget:self action:@selector(sendVideo) forControlEvents:UIControlEventTouchUpInside];
+    [self.refreshButton addTarget:self action:@selector(refreshView) forControlEvents:UIControlEventTouchUpInside];
+    [self.playButton addTarget:self action:@selector(playVideo) forControlEvents:UIControlEventTouchUpInside];
+}
+
+- (void)refreshView {
+    [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:nil];
+    
+    [self.recordButton setTitle:@"按住拍摄" forState:UIControlStateNormal];
+    [self recordButtonTarget];
+    [self.playButton removeFromSuperview];
+    self.playButton = nil;
+    [self.refreshButton removeFromSuperview];
+    self.refreshButton = nil;
+
+}
+
+- (void)playVideo {
+
+    
+}
+
+- (void)toggleRecording {
+
+    [UIApplication sharedApplication].idleTimerDisabled = YES;
+    
+    self.beginRecordTime = [NSDate date].timeIntervalSince1970;
+
+    [self.writer startRecording];
+}
+
+- (void)closeCamera {
+
+    [_writer stopRecording];
+}
+
+- (void)buttonStopRecording {
+    [self closeCamera];
+}
+
+- (void)sendVideo {
+
 }
 
 @end
