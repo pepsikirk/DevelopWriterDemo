@@ -10,6 +10,8 @@
 		881096DF1C47A01900A99726 /* PKShortVideoViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 881096DE1C47A01900A99726 /* PKShortVideoViewController.m */; };
 		881096E21C47A86B00A99726 /* PKShortVideoWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 881096E11C47A86B00A99726 /* PKShortVideoWriter.m */; };
 		881828C11C4CCAF900E9C51B /* IDAssetWriterCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = 881828C01C4CCAF900E9C51B /* IDAssetWriterCoordinator.m */; };
+		881828C71C4E49EA00E9C51B /* PKFullScreenPlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = 881828C41C4E49EA00E9C51B /* PKFullScreenPlayerView.m */; };
+		881828C81C4E49EA00E9C51B /* PKFullScreenPlayerViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 881828C61C4E49EA00E9C51B /* PKFullScreenPlayerViewController.m */; };
 		88297F8E1C4CE8E30059A7B1 /* PKUtiltiies.m in Sources */ = {isa = PBXBuildFile; fileRef = 88297F8D1C4CE8E30059A7B1 /* PKUtiltiies.m */; };
 		88382D3A1C48C73E00AB8709 /* PKShortVideoProgressBar.m in Sources */ = {isa = PBXBuildFile; fileRef = 88382D391C48C73E00AB8709 /* PKShortVideoProgressBar.m */; };
 		88AA24AB1C465AF0001B629F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 88AA24AA1C465AF0001B629F /* main.m */; };
@@ -46,6 +48,10 @@
 		881096E11C47A86B00A99726 /* PKShortVideoWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKShortVideoWriter.m; path = PKShortVideoWriter/PKShortVideoWriter.m; sourceTree = "<group>"; };
 		881828BF1C4CCAF900E9C51B /* IDAssetWriterCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = IDAssetWriterCoordinator.h; path = PKShortVideoWriter/IDAssetWriterCoordinator.h; sourceTree = "<group>"; };
 		881828C01C4CCAF900E9C51B /* IDAssetWriterCoordinator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = IDAssetWriterCoordinator.m; path = PKShortVideoWriter/IDAssetWriterCoordinator.m; sourceTree = "<group>"; };
+		881828C31C4E49EA00E9C51B /* PKFullScreenPlayerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PKFullScreenPlayerView.h; sourceTree = "<group>"; };
+		881828C41C4E49EA00E9C51B /* PKFullScreenPlayerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PKFullScreenPlayerView.m; sourceTree = "<group>"; };
+		881828C51C4E49EA00E9C51B /* PKFullScreenPlayerViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PKFullScreenPlayerViewController.h; sourceTree = "<group>"; };
+		881828C61C4E49EA00E9C51B /* PKFullScreenPlayerViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PKFullScreenPlayerViewController.m; sourceTree = "<group>"; };
 		88297F8C1C4CE8E30059A7B1 /* PKUtiltiies.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKUtiltiies.h; path = PKShortVideoWriter/PKUtiltiies.h; sourceTree = "<group>"; };
 		88297F8D1C4CE8E30059A7B1 /* PKUtiltiies.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKUtiltiies.m; path = PKShortVideoWriter/PKUtiltiies.m; sourceTree = "<group>"; };
 		88382D381C48C73E00AB8709 /* PKShortVideoProgressBar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKShortVideoProgressBar.h; path = PKShortVideoWriter/PKShortVideoProgressBar.h; sourceTree = "<group>"; };
@@ -96,6 +102,7 @@
 		881096DC1C479FA300A99726 /* YGShortVideoWriter */ = {
 			isa = PBXGroup;
 			children = (
+				881828C21C4E49EA00E9C51B /* AVPlayer */,
 				881096DD1C47A01900A99726 /* PKShortVideoViewController.h */,
 				881096DE1C47A01900A99726 /* PKShortVideoViewController.m */,
 				881096E01C47A86B00A99726 /* PKShortVideoWriter.h */,
@@ -108,6 +115,18 @@
 				88297F8D1C4CE8E30059A7B1 /* PKUtiltiies.m */,
 			);
 			name = YGShortVideoWriter;
+			sourceTree = "<group>";
+		};
+		881828C21C4E49EA00E9C51B /* AVPlayer */ = {
+			isa = PBXGroup;
+			children = (
+				881828C31C4E49EA00E9C51B /* PKFullScreenPlayerView.h */,
+				881828C41C4E49EA00E9C51B /* PKFullScreenPlayerView.m */,
+				881828C51C4E49EA00E9C51B /* PKFullScreenPlayerViewController.h */,
+				881828C61C4E49EA00E9C51B /* PKFullScreenPlayerViewController.m */,
+			);
+			name = AVPlayer;
+			path = PKShortVideoWriter/AVPlayer;
 			sourceTree = "<group>";
 		};
 		88AA249D1C465AF0001B629F = {
@@ -304,10 +323,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				881096DF1C47A01900A99726 /* PKShortVideoViewController.m in Sources */,
+				881828C81C4E49EA00E9C51B /* PKFullScreenPlayerViewController.m in Sources */,
 				88AA24B11C465AF0001B629F /* ViewController.m in Sources */,
 				88AA24AE1C465AF0001B629F /* AppDelegate.m in Sources */,
 				881828C11C4CCAF900E9C51B /* IDAssetWriterCoordinator.m in Sources */,
 				88AA24AB1C465AF0001B629F /* main.m in Sources */,
+				881828C71C4E49EA00E9C51B /* PKFullScreenPlayerView.m in Sources */,
 				88382D3A1C48C73E00AB8709 /* PKShortVideoProgressBar.m in Sources */,
 				88297F8E1C4CE8E30059A7B1 /* PKUtiltiies.m in Sources */,
 				881096E21C47A86B00A99726 /* PKShortVideoWriter.m in Sources */,

@@ -11,6 +11,7 @@
 #import "PKShortVideoProgressBar.h"
 #import "PKUtiltiies.h"
 #import <AVFoundation/AVFoundation.h>
+#import "PKFullScreenPlayerViewController.h"
 
 static CGFloat PKAllButtonVarticalHeight = 0;
 static CGFloat PKPreviewLayerHeight = 0;
@@ -155,8 +156,8 @@ static CGFloat const PKRecordButtonWidth = 80;
 }
 
 - (void)playVideo {
-
-    
+    PKFullScreenPlayerViewController *vc = [[PKFullScreenPlayerViewController alloc] initWithVideoURL:self.outputFileURL previewImage:nil];
+    [self.navigationController pushViewController:vc animated:YES];
 }
 
 - (void)toggleRecording {
