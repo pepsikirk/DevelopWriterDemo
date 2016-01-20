@@ -1,30 +1,29 @@
 //
-//  IDAssetWriterCoordinator.m
-//  VideoCaptureDemo
+//  PKAssetWriter.m
+//  DevelopWriterDemo
 //
-//  Created by Adriaan Stellingwerff on 9/04/2015.
-//  Copyright (c) 2015 Infoding. All rights reserved.
+//  Created by jiangxincai on 16/1/17.
+//  Copyright © 2016年 pepsikirk. All rights reserved.
 //
 
-#import "IDAssetWriterCoordinator.h"
+#import "PKAssetWriter.h"
 
-typedef NS_ENUM(NSInteger, WriterStatus){
-    WriterStatusIdle = 0,
-    WriterStatusPreparingToRecord,
-    WriterStatusRecording,
-    WriterStatusFinishingRecordingPart1, // waiting for inflight buffers to be appended
-    WriterStatusFinishingRecordingPart2, // calling finish writing on the asset writer
-    WriterStatusFinished,	// terminal state
-    WriterStatusFailed		// terminal state
+typedef NS_ENUM(NSInteger, PKWriterStatus){
+    PKWriterStatusIdle = 0,
+    PKWriterStatusPreparingToRecord,
+    PKWriterStatusRecording,
+    PKWriterStatusFinishingRecordingPart1, // waiting for inflight buffers to be appended
+    PKWriterStatusFinishingRecordingPart2, // calling finish writing on the asset writer
+    PKWriterStatusFinished,	// terminal state
+    PKWriterStatusFailed		// terminal state
 }; // internal state machine
 
-@interface IDAssetWriterCoordinator ()
+@interface PKAssetWriter ()
 
-@property (nonatomic, weak) id<IDAssetWriterCoordinatorDelegate> delegate;
-
-@property (nonatomic, assign) WriterStatus status;
+@property (nonatomic, assign) PKWriterStatus status;
 
 @property (nonatomic) dispatch_queue_t writingQueue;
+@property (nonatomic) dispatch_queue_t delegateCallbackQueue;
 
 @property (nonatomic) NSURL *URL;
 
@@ -42,7 +41,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
 
 @end
 
-@implementation IDAssetWriterCoordinator
+@implementation PKAssetWriter
 
 
 - (instancetype)initWithURL:(NSURL *)URL
@@ -53,7 +52,9 @@ typedef NS_ENUM(NSInteger, WriterStatus){
     
     self = [super init];
     if (self) {
+        _delegateCallbackQueue = dispatch_queue_create( "com.example.capturesession.writercallback", DISPATCH_QUEUE_SERIAL );
         _writingQueue = dispatch_queue_create( "com.example.assetwriter.writing", DISPATCH_QUEUE_SERIAL );
+        
         _videoTrackTransform = CGAffineTransformMakeRotation(M_PI_2); //portrait orientation
         _URL = URL;
     }
@@ -68,7 +69,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
     }
     @synchronized( self )
     {
-        if (_status != WriterStatusIdle){
+        if (_status != PKWriterStatusIdle){
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add tracks while not idle" userInfo:nil];
             return;
         }
@@ -92,7 +93,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
     
     @synchronized( self )
     {
-        if ( _status != WriterStatusIdle ) {
+        if ( _status != PKWriterStatusIdle ) {
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add tracks while not idle" userInfo:nil];
             return;
         }
@@ -111,11 +112,11 @@ typedef NS_ENUM(NSInteger, WriterStatus){
 {
     @synchronized( self )
     {
-        if (_status != WriterStatusIdle){
+        if (_status != PKWriterStatusIdle){
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Already prepared, cannot prepare again" userInfo:nil];
             return;
         }
-        [self transitionToStatus:WriterStatusPreparingToRecord error:nil];
+        [self transitionToStatus:PKWriterStatusPreparingToRecord error:nil];
     }
     
     dispatch_async( dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_LOW, 0 ), ^{
@@ -143,9 +144,9 @@ typedef NS_ENUM(NSInteger, WriterStatus){
             @synchronized(self)
             {
                 if (error) {
-                    [self transitionToStatus:WriterStatusFailed error:error];
+                    [self transitionToStatus:PKWriterStatusFailed error:error];
                 } else {
-                    [self transitionToStatus:WriterStatusRecording error:nil];
+                    [self transitionToStatus:PKWriterStatusRecording error:nil];
                 }
             }
         }
@@ -169,25 +170,25 @@ typedef NS_ENUM(NSInteger, WriterStatus){
         BOOL shouldFinishRecording = NO;
         switch (_status)
         {
-            case WriterStatusIdle:
-            case WriterStatusPreparingToRecord:
-            case WriterStatusFinishingRecordingPart1:
-            case WriterStatusFinishingRecordingPart2:
-            case WriterStatusFinished:
+            case PKWriterStatusIdle:
+            case PKWriterStatusPreparingToRecord:
+            case PKWriterStatusFinishingRecordingPart1:
+            case PKWriterStatusFinishingRecordingPart2:
+            case PKWriterStatusFinished:
                 @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Not recording" userInfo:nil];
                 break;
-            case WriterStatusFailed:
+            case PKWriterStatusFailed:
                 // From the client's perspective the movie recorder can asynchronously transition to an error state as the result of an append.
                 // Because of this we are lenient when finishRecording is called and we are in an error state.
                 NSLog( @"Recording has failed, nothing to do" );
                 break;
-            case WriterStatusRecording:
+            case PKWriterStatusRecording:
                 shouldFinishRecording = YES;
                 break;
         }
         
         if (shouldFinishRecording){
-            [self transitionToStatus:WriterStatusFinishingRecordingPart1 error:nil];
+            [self transitionToStatus:PKWriterStatusFinishingRecordingPart1 error:nil];
         }
         else {
             return;
@@ -200,23 +201,23 @@ typedef NS_ENUM(NSInteger, WriterStatus){
             @synchronized(self)
             {
                 // We may have transitioned to an error state as we appended inflight buffers. In that case there is nothing to do now.
-                if ( _status != WriterStatusFinishingRecordingPart1 ) {
+                if ( _status != PKWriterStatusFinishingRecordingPart1 ) {
                     return;
                 }
                 
                 // It is not safe to call -[AVAssetWriter finishWriting*] concurrently with -[AVAssetWriterInput appendSampleBuffer:]
                 // We transition to MovieRecorderStatusFinishingRecordingPart2 while on _writingQueue, which guarantees that no more buffers will be appended.
-                [self transitionToStatus:WriterStatusFinishingRecordingPart2 error:nil];
+                [self transitionToStatus:PKWriterStatusFinishingRecordingPart2 error:nil];
             }
             [_assetWriter finishWritingWithCompletionHandler:^{
                 @synchronized( self )
                 {
                     NSError *error = _assetWriter.error;
                     if(error){
-                        [self transitionToStatus:WriterStatusFailed error:error];
+                        [self transitionToStatus:PKWriterStatusFailed error:error];
                     }
                     else {
-                        [self transitionToStatus:WriterStatusFinished error:nil];
+                        [self transitionToStatus:PKWriterStatusFinished error:nil];
                     }
                 }
             }];
@@ -323,7 +324,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
     }
     
     @synchronized(self){
-        if (_status < WriterStatusRecording){
+        if (_status < PKWriterStatusRecording){
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Not ready to record yet" userInfo:nil];
             return;
         }
@@ -338,7 +339,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
                 // From the client's perspective the movie recorder can asynchronously transition to an error state as the result of an append.
                 // Because of this we are lenient when samples are appended and we are no longer recording.
                 // Instead of throwing an exception we just release the sample buffers and return.
-                if (_status > WriterStatusFinishingRecordingPart1){
+                if (_status > PKWriterStatusFinishingRecordingPart1){
                     CFRelease(sampleBuffer);
                     return;
                 }
@@ -356,7 +357,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
                 if (!success){
                     NSError *error = _assetWriter.error;
                     @synchronized(self){
-                        [self transitionToStatus:WriterStatusFailed error:error];
+                        [self transitionToStatus:PKWriterStatusFailed error:error];
                     }
                 }
             } else {
@@ -368,13 +369,13 @@ typedef NS_ENUM(NSInteger, WriterStatus){
 }
 
 // call under @synchonized( self )
-- (void)transitionToStatus:(WriterStatus)newStatus error:(NSError *)error
+- (void)transitionToStatus:(PKWriterStatus)newStatus error:(NSError *)error
 {
     BOOL shouldNotifyDelegate = NO;
     
     if (newStatus != _status){
         // terminal states
-        if ((newStatus == WriterStatusFinished) || (newStatus == WriterStatusFailed)){
+        if ((newStatus == PKWriterStatusFinished) || (newStatus == PKWriterStatusFailed)){
             shouldNotifyDelegate = YES;
             // make sure there are no more sample buffers in flight before we tear down the asset writer and inputs
             
@@ -382,30 +383,30 @@ typedef NS_ENUM(NSInteger, WriterStatus){
                 _assetWriter = nil;
                 _videoInput = nil;
                 _audioInput = nil;
-                if (newStatus == WriterStatusFailed) {
+                if (newStatus == PKWriterStatusFailed) {
                     [[NSFileManager defaultManager] removeItemAtURL:_URL error:NULL];
                 }
             } );
-        } else if (newStatus == WriterStatusRecording){
+        } else if (newStatus == PKWriterStatusRecording){
             shouldNotifyDelegate = YES;
         }
         _status = newStatus;
     }
     
     if (shouldNotifyDelegate && self.delegate){
-        dispatch_async( dispatch_get_main_queue(), ^{
+        dispatch_async( _delegateCallbackQueue, ^{
             
             @autoreleasepool
             {
                 switch(newStatus){
-                    case WriterStatusRecording:
-                        [self.delegate writerCoordinatorDidFinishPreparing:self];
+                    case PKWriterStatusRecording:
+                        [self.delegate writerDidFinishPreparing:self];
                         break;
-                    case WriterStatusFinished:
-                        [self.delegate writerCoordinatorDidFinishRecording:self];
+                    case PKWriterStatusFinished:
+                        [self.delegate writerDidFinishRecording:self];
                         break;
-                    case WriterStatusFailed:
-                        [self.delegate writerCoordinator:self didFailWithError:error];
+                    case PKWriterStatusFailed:
+                        [self.delegate writer:self didFailWithError:error];
                         break;
                     default:
                         break;

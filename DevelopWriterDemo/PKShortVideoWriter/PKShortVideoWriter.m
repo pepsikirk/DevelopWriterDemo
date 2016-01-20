@@ -9,21 +9,20 @@
 #import "PKShortVideoWriter.h"
 #import <AVFoundation/AVFoundation.h>
 #import <MobileCoreServices/MobileCoreServices.h>
-#import "IDAssetWriterCoordinator.h"
+#import "PKAssetWriter.h"
 
 typedef NS_ENUM( NSInteger, RecordingStatus ) {
     RecordingStatusIdle = 0,
     RecordingStatusStartingRecording,
     RecordingStatusRecording,
     RecordingStatusStoppingRecording,
-}; // internal state machine
+}; 
 
-@interface PKShortVideoWriter() <AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate, IDAssetWriterCoordinatorDelegate>
+@interface PKShortVideoWriter() <AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate, PKAssetWriterDelegate>
 
 @property (nonatomic, strong) NSURL *outputFileURL;
 @property (nonatomic, assign) CGSize outputSize;
 
-@property (nonatomic, strong) dispatch_queue_t delegateCallbackQueue;
 @property (nonatomic, strong) dispatch_queue_t sessionQueue;
 
 @property (nonatomic, strong) dispatch_queue_t videoDataOutputQueue;
@@ -42,13 +41,11 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 @property (nonatomic, strong) AVCaptureDevice *cameraDevice;
 @property (nonatomic, strong) AVCaptureVideoPreviewLayer *previewLayer;
 
-@property (nonatomic, strong) AVAssetWriter *assetWriter;
-
 @property (nonatomic, assign) RecordingStatus recordingStatus;
 @property(nonatomic, retain) __attribute__((NSObject)) CMFormatDescriptionRef outputVideoFormatDescription;
 @property(nonatomic, retain) __attribute__((NSObject)) CMFormatDescriptionRef outputAudioFormatDescription;
 
-@property(nonatomic, retain) IDAssetWriterCoordinator *assetWriterCoordinator;
+@property(nonatomic, retain) PKAssetWriter *assetWriter;
 
 @end
 
@@ -63,10 +60,13 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
         _outputSize = outputSize;
         
         _sessionQueue = dispatch_queue_create( "com.example.capturepipeline.session", DISPATCH_QUEUE_SERIAL );
-        _captureSession = [self setupCaptureSession];
-        self.videoDataOutputQueue = dispatch_queue_create( "com.example.capturesession.videodata", DISPATCH_QUEUE_SERIAL );
+        
+        _audioDataOutputQueue = dispatch_queue_create( "com.example.capturesession.audiodata", DISPATCH_QUEUE_SERIAL );
+
+        _videoDataOutputQueue = dispatch_queue_create( "com.example.capturesession.videodata", DISPATCH_QUEUE_SERIAL );
         dispatch_set_target_queue( _videoDataOutputQueue, dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_HIGH, 0 ) );
-        self.audioDataOutputQueue = dispatch_queue_create( "com.example.capturesession.audiodata", DISPATCH_QUEUE_SERIAL );
+        
+        _captureSession = [self setupCaptureSession];
         [self addDataOutputsToCaptureSession:self.captureSession];
     }
     return self;
@@ -77,16 +77,15 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 #pragma mark - Running Session
 
 - (void)startRunning {
-    dispatch_sync( _sessionQueue, ^{
-        [_captureSession startRunning];
+    dispatch_sync( self.sessionQueue, ^{
+        [self.captureSession startRunning];
     } );
 }
 
 - (void)stopRunning {
-    dispatch_sync( _sessionQueue, ^{
-        // the captureSessionDidStopRunning method will stop recording if necessary as well, but we do it here so that the last video and audio samples are better aligned
-        [self stopRecording]; // does nothing if we aren't currently recording
-        [_captureSession stopRunning];
+    dispatch_sync( self.sessionQueue, ^{
+        [self stopRecording];
+        [self.captureSession stopRunning];
     } );
 }
 
@@ -94,75 +93,66 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 
 #pragma mark - Recording
 
-- (void)startRecording
-{
+- (void)startRecording {
     @synchronized(self) {
-        if(_recordingStatus != RecordingStatusIdle) {
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Already recording" userInfo:nil];
+        if(self.recordingStatus != RecordingStatusIdle) {
+            NSLog(@"Already recording");
             return;
         }
         [self transitionToRecordingStatus:RecordingStatusStartingRecording error:nil];
     }
     
-    self.assetWriterCoordinator = [[IDAssetWriterCoordinator alloc] initWithURL:self.outputFileURL];
-    if(_outputAudioFormatDescription != nil){
-        [_assetWriterCoordinator addAudioTrackWithSourceFormatDescription:self.outputAudioFormatDescription settings:_audioCompressionSettings];
+    self.assetWriter = [[PKAssetWriter alloc] initWithURL:self.outputFileURL];
+    if(self.outputAudioFormatDescription != nil){
+        [self.assetWriter addAudioTrackWithSourceFormatDescription:self.outputAudioFormatDescription settings:self.audioCompressionSettings];
     }
-    [_assetWriterCoordinator addVideoTrackWithSourceFormatDescription:self.outputVideoFormatDescription settings:_videoCompressionSettings];
-    
-    dispatch_queue_t callbackQueue = dispatch_queue_create( "com.example.capturesession.writercallback", DISPATCH_QUEUE_SERIAL ); // guarantee ordering of callbacks with a serial queue
-    [_assetWriterCoordinator setDelegate:self callbackQueue:callbackQueue];
-    [_assetWriterCoordinator prepareToRecord]; // asynchronous, will call us back with recorderDidFinishPreparing: or recorder:didFailWithError: when done
+    [self.assetWriter addVideoTrackWithSourceFormatDescription:self.outputVideoFormatDescription settings:self.videoCompressionSettings];
+    self.assetWriter.delegate = self;
+    [self.assetWriter prepareToRecord];
 }
 
-- (void)stopRecording
-{
-    @synchronized(self)
-    {
-        if (_recordingStatus != RecordingStatusRecording){
+- (void)stopRecording {
+    @synchronized(self) {
+        if (self.recordingStatus != RecordingStatusRecording){
             return;
         }
         [self transitionToRecordingStatus:RecordingStatusStoppingRecording error:nil];
     }
-    [self.assetWriterCoordinator finishRecording]; // asynchronous, will call us back with
+    [self.assetWriter finishRecording];
 }
 
 
 
 #pragma mark - Private methods
 
-- (void)addDataOutputsToCaptureSession:(AVCaptureSession *)captureSession
-{
+- (void)addDataOutputsToCaptureSession:(AVCaptureSession *)captureSession {
     self.videoDataOutput = [AVCaptureVideoDataOutput new];
-    _videoDataOutput.videoSettings = nil;
-    _videoDataOutput.alwaysDiscardsLateVideoFrames = NO;
+    self.videoDataOutput.videoSettings = nil;
+    self.videoDataOutput.alwaysDiscardsLateVideoFrames = NO;
     
-    [_videoDataOutput setSampleBufferDelegate:self queue:_videoDataOutputQueue];
+    [self.videoDataOutput setSampleBufferDelegate:self queue:self.videoDataOutputQueue];
     
     self.audioDataOutput = [AVCaptureAudioDataOutput new];
-    [_audioDataOutput setSampleBufferDelegate:self queue:_audioDataOutputQueue];
+    [self.audioDataOutput setSampleBufferDelegate:self queue:self.audioDataOutputQueue];
     
-    [self addOutput:_videoDataOutput toCaptureSession:self.captureSession];
-    _videoConnection = [_videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
+    [self addOutput:self.videoDataOutput toCaptureSession:self.captureSession];
+    self.videoConnection = [self.videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
     
-    [self addOutput:_audioDataOutput toCaptureSession:self.captureSession];
-    _audioConnection = [_audioDataOutput connectionWithMediaType:AVMediaTypeAudio];
+    [self addOutput:self.audioDataOutput toCaptureSession:self.captureSession];
+    self.audioConnection = [self.audioDataOutput connectionWithMediaType:AVMediaTypeAudio];
     
     [self setCompressionSettings];
 }
 
-- (void)setupVideoPipelineWithInputFormatDescription:(CMFormatDescriptionRef)inputFormatDescription
-{
+- (void)setupVideoPipelineWithInputFormatDescription:(CMFormatDescriptionRef)inputFormatDescription {
     self.outputVideoFormatDescription = inputFormatDescription;
 }
 
-- (void)teardownVideoPipeline
-{
+- (void)teardownVideoPipeline {
     self.outputVideoFormatDescription = nil;
 }
 
-- (void)setCompressionSettings
-{
+- (void)setCompressionSettings {
     //    _videoCompressionSettings = [_videoDataOutput recommendedVideoSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
     NSInteger numPixels = self.outputSize.width * self.outputSize.height;
     NSInteger bitsPerPixel = 6.0;
@@ -172,13 +162,13 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
                                              AVVideoExpectedSourceFrameRateKey : @(30),
                                              AVVideoMaxKeyFrameIntervalKey : @(30) };
     
-    _videoCompressionSettings = @{ AVVideoCodecKey : AVVideoCodecH264,
+    self.videoCompressionSettings = @{ AVVideoCodecKey : AVVideoCodecH264,
                                    AVVideoWidthKey : @(self.outputSize.width),
                                    AVVideoHeightKey : @(self.outputSize.height),
                                    AVVideoCompressionPropertiesKey : compressionProperties };
     
     //    _audioCompressionSettings = [_audioDataOutput recommendedAudioSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
-    _audioCompressionSettings = @{ AVEncoderBitRatePerChannelKey : @(28000),
+    self.audioCompressionSettings = @{ AVEncoderBitRatePerChannelKey : @(28000),
                                    AVFormatIDKey : @(kAudioFormatMPEG4AAC),
                                    AVNumberOfChannelsKey : @(1),
                                    AVSampleRateKey : @(22050) };
@@ -186,11 +176,10 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 
 #pragma mark - SampleBufferDelegate methods
 
-- (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection
-{
+- (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
     CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
     
-    if (connection == _videoConnection){
+    if (connection == self.videoConnection){
         if (self.outputVideoFormatDescription == nil) {
             // Don't render the first sample buffer.
             // This gives us one frame interval (33ms at 30fps) for setupVideoPipelineWithInputFormatDescription: to complete.
@@ -202,18 +191,53 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
         } else {
             self.outputVideoFormatDescription = formatDescription;
             @synchronized(self) {
-                if(_recordingStatus == RecordingStatusRecording){
-                    [_assetWriterCoordinator appendVideoSampleBuffer:sampleBuffer];
+                if(self.recordingStatus == RecordingStatusRecording){
+                    [self.assetWriter appendVideoSampleBuffer:sampleBuffer];
                 }
             }
         }
-    } else if ( connection == _audioConnection ){
+    } else if ( connection == self.audioConnection ){
         self.outputAudioFormatDescription = formatDescription;
         @synchronized( self ) {
-            if(_recordingStatus == RecordingStatusRecording){
-                [_assetWriterCoordinator appendAudioSampleBuffer:sampleBuffer];
+            if(self.recordingStatus == RecordingStatusRecording){
+                [self.assetWriter appendAudioSampleBuffer:sampleBuffer];
             }
         }
+    }
+}
+
+#pragma mark - PKAssetWriterDelegate methods
+
+- (void)writerDidFinishPreparing:(PKShortVideoWriter *)writer {
+    @synchronized(self) {
+        if(self.recordingStatus != RecordingStatusStartingRecording){
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Expected to be in StartingRecording state" userInfo:nil];
+            return;
+        }
+        [self transitionToRecordingStatus:RecordingStatusRecording error:nil];
+    }
+}
+
+- (void)writer:(PKShortVideoWriter *)writer didFailWithError:(NSError *)error {
+    @synchronized( self ) {
+        self.assetWriter = nil;
+        [self transitionToRecordingStatus:RecordingStatusIdle error:error];
+    }
+}
+
+- (void)writerDidFinishRecording:(PKShortVideoWriter *)writer {
+    @synchronized( self ) {
+        if ( self.recordingStatus != RecordingStatusStoppingRecording ) {
+            NSLog(@"Expected to be in StoppingRecording state");
+            return;
+        }
+        // No state transition, we are still in the process of stopping.
+        // We will be stopped once we save to the assets library.
+    }
+    self.assetWriter = nil;
+    
+    @synchronized( self ) {
+        [self transitionToRecordingStatus:RecordingStatusIdle error:nil];
     }
 }
 
@@ -221,33 +245,29 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 #pragma mark - Recording State Machine
 
 // call under @synchonized( self )
-- (void)transitionToRecordingStatus:(RecordingStatus)newStatus error:(NSError *)error
-{
-    RecordingStatus oldStatus = _recordingStatus;
-    _recordingStatus = newStatus;
+- (void)transitionToRecordingStatus:(RecordingStatus)newStatus error:(NSError *)error {
+    RecordingStatus oldStatus = self.recordingStatus;
+    self.recordingStatus = newStatus;
     
     if (newStatus != oldStatus){
         if (error && (newStatus == RecordingStatusIdle)){
-            dispatch_async( self.delegateCallbackQueue, ^{
-                @autoreleasepool
-                {
-                    [self.delegate writer:self didFinishRecordingToOutputFileURL:_outputFileURL error:error];
+            dispatch_async( dispatch_get_main_queue(), ^{
+                @autoreleasepool {
+                    [self.delegate writer:self didFinishRecordingToOutputFileURL:self.outputFileURL error:error];
                 }
             });
         } else {
             error = nil; // only the above delegate method takes an error
             if (oldStatus == RecordingStatusStartingRecording && newStatus == RecordingStatusRecording){
-                dispatch_async( self.delegateCallbackQueue, ^{
-                    @autoreleasepool
-                    {
+                dispatch_async( dispatch_get_main_queue(), ^{
+                    @autoreleasepool {
                         [self.delegate writerDidBeginRecording:self];
                     }
                 });
             } else if (oldStatus == RecordingStatusStoppingRecording && newStatus == RecordingStatusIdle) {
-                dispatch_async( self.delegateCallbackQueue, ^{
-                    @autoreleasepool
-                    {
-                        [self.delegate writer:self didFinishRecordingToOutputFileURL:_outputFileURL error:nil];
+                dispatch_async( dispatch_get_main_queue(), ^{
+                    @autoreleasepool {
+                        [self.delegate writer:self didFinishRecordingToOutputFileURL:self.outputFileURL error:nil];
                     }
                 });
             }
@@ -259,8 +279,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 #pragma mark - Capture Session Setup
 
 
-- (AVCaptureSession *)setupCaptureSession
-{
+- (AVCaptureSession *)setupCaptureSession {
     AVCaptureSession *captureSession = [AVCaptureSession new];
     captureSession.sessionPreset = AVCaptureSessionPresetMedium;
     
@@ -274,8 +293,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
     return captureSession;
 }
 
-- (BOOL)addDefaultCameraInputToCaptureSession:(AVCaptureSession *)captureSession
-{
+- (BOOL)addDefaultCameraInputToCaptureSession:(AVCaptureSession *)captureSession {
     NSError *error;
     AVCaptureDeviceInput *cameraDeviceInput = [[AVCaptureDeviceInput alloc] initWithDevice:[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo] error:&error];
     
@@ -284,14 +302,13 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
         return NO;
     } else {
         BOOL success = [self addInput:cameraDeviceInput toCaptureSession:captureSession];
-        _cameraDevice = cameraDeviceInput.device;
+        self.cameraDevice = cameraDeviceInput.device;
         return success;
     }
 }
 
 //Not used in this project, but illustration of how to select a specific camera
-- (BOOL)addCameraAtPosition:(AVCaptureDevicePosition)position toCaptureSession:(AVCaptureSession *)captureSession
-{
+- (BOOL)addCameraAtPosition:(AVCaptureDevicePosition)position toCaptureSession:(AVCaptureSession *)captureSession {
     NSError *error;
     NSArray *devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
     AVCaptureDeviceInput *cameraDeviceInput;
@@ -310,14 +327,13 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
         return NO;
     } else {
         BOOL success = [self addInput:cameraDeviceInput toCaptureSession:captureSession];
-        _cameraDevice = cameraDeviceInput.device;
+        self.cameraDevice = cameraDeviceInput.device;
         [self setFrameRateWithDuration:CMTimeMake(1,30) OnCaptureDevice:cameraDeviceInput.device];
         return success;
     }
 }
 
-- (BOOL)addDefaultMicInputToCaptureSession:(AVCaptureSession *)captureSession
-{
+- (BOOL)addDefaultMicInputToCaptureSession:(AVCaptureSession *)captureSession {
     NSError *error;
     AVCaptureDeviceInput *micDeviceInput = [[AVCaptureDeviceInput alloc] initWithDevice:[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio] error:&error];
     if(error){
@@ -329,8 +345,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
     }
 }
 
-- (BOOL)addInput:(AVCaptureDeviceInput *)input toCaptureSession:(AVCaptureSession *)captureSession
-{
+- (BOOL)addInput:(AVCaptureDeviceInput *)input toCaptureSession:(AVCaptureSession *)captureSession {
     if([captureSession canAddInput:input]){
         [captureSession addInput:input];
         return YES;
@@ -341,8 +356,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 }
 
 
-- (BOOL)addOutput:(AVCaptureOutput *)output toCaptureSession:(AVCaptureSession *)captureSession
-{
+- (BOOL)addOutput:(AVCaptureOutput *)output toCaptureSession:(AVCaptureSession *)captureSession {
     if([captureSession canAddOutput:output]){
         [captureSession addOutput:output];
         return YES;
@@ -355,8 +369,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 
 #pragma mark - Methods discussed in the article but not used in this demo app
 
-- (void)setFrameRateWithDuration:(CMTime)frameDuration OnCaptureDevice:(AVCaptureDevice *)device
-{
+- (void)setFrameRateWithDuration:(CMTime)frameDuration OnCaptureDevice:(AVCaptureDevice *)device {
     NSError *error;
     NSArray *supportedFrameRateRanges = [device.activeFormat videoSupportedFrameRateRanges];
     BOOL frameRateSupported = NO;
@@ -374,8 +387,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 }
 
 
-- (void)listCamerasAndMics
-{
+- (void)listCamerasAndMics {
     NSLog(@"%@", [[AVCaptureDevice devices] description]);
     NSError *error;
     AVAudioSession *audioSession = [AVAudioSession sharedInstance];
@@ -409,15 +421,13 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
     }
 }
 
-- (void)logError:(NSError *)error
-{
-    if(error){
+- (void)logError:(NSError *)error {
+    if(error) {
         NSLog(@"%@", [error localizedDescription]);
     }
 }
 
-- (void)configureFrontMic
-{
+- (void)configureFrontMic {
     NSError *error;
     AVAudioSession *audioSession = [AVAudioSession sharedInstance];
     [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord error:&error];

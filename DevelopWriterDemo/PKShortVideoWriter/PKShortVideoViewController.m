@@ -107,6 +107,9 @@ static CGFloat const PKRecordButtonWidth = 80;
     self.refreshButton.center = CGPointMake(kScreenWidth/4 *3, PKAllButtonVarticalHeight);
     [self.view addSubview:self.refreshButton];
     
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.writer startRunning];
+    });
 }
 
 - (void)didReceiveMemoryWarning {
@@ -152,7 +155,6 @@ static CGFloat const PKRecordButtonWidth = 80;
     self.playButton = nil;
     [self.refreshButton removeFromSuperview];
     self.refreshButton = nil;
-
 }
 
 - (void)playVideo {
