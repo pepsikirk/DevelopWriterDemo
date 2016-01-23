@@ -80,7 +80,7 @@ static CGFloat const PKRecordButtonWidth = 80;
     
     AVCaptureVideoPreviewLayer *previewLayer = [self.writer previewLayer];
     previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-    previewLayer.frame = CGRectMake(0, 0, kScreenWidth, PKPreviewLayerHeight);
+    previewLayer.frame = CGRectMake(0, 44, kScreenWidth, PKPreviewLayerHeight);
     [self.view.layer insertSublayer:previewLayer atIndex:0];
     
     self.recordButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -96,15 +96,15 @@ static CGFloat const PKRecordButtonWidth = 80;
     [self.view addSubview:self.recordButton];
     
     self.playButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [self.playButton setImage:[UIImage imageNamed:@"Play"] forState:UIControlStateNormal];
+    [self.playButton setImage:[UIImage imageNamed:@"PK_Play"] forState:UIControlStateNormal];
     [self.playButton sizeToFit];
-    self.playButton.center = CGPointMake(kScreenWidth/4, PKAllButtonVarticalHeight);
+    self.playButton.center = CGPointMake((kScreenWidth-PKRecordButtonWidth)/2/2, PKAllButtonVarticalHeight);
     [self.view addSubview:self.playButton];
     
     self.refreshButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [self.refreshButton setImage:[UIImage imageNamed:@"Refresh"] forState:UIControlStateNormal];
+    [self.refreshButton setImage:[UIImage imageNamed:@"PK_Delete"] forState:UIControlStateNormal];
     [self.refreshButton sizeToFit];
-    self.refreshButton.center = CGPointMake(kScreenWidth/4 *3, PKAllButtonVarticalHeight);
+    self.refreshButton.center = CGPointMake(kScreenWidth-(kScreenWidth-PKRecordButtonWidth)/2/2, PKAllButtonVarticalHeight);
     [self.view addSubview:self.refreshButton];
     
     dispatch_async(dispatch_get_main_queue(), ^{
