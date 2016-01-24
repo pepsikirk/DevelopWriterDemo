@@ -13,10 +13,11 @@
 #import <AVFoundation/AVFoundation.h>
 #import "PKFullScreenPlayerViewController.h"
 
-static CGFloat PKAllButtonVarticalHeight = 0;
+static CGFloat PKOtherButtonVarticalHeight = 0;
+static CGFloat PKRecordButtonVarticalHeight = 0;
 static CGFloat PKPreviewLayerHeight = 0;
 
-static CGFloat const PKRecordButtonWidth = 80;
+static CGFloat const PKRecordButtonWidth = 90;
 
 @interface PKShortVideoViewController()
 
@@ -56,7 +57,9 @@ static CGFloat const PKRecordButtonWidth = 80;
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     PKPreviewLayerHeight = 3/4.0 * kScreenWidth;
-    PKAllButtonVarticalHeight = kScreenHeight/2 + PKPreviewLayerHeight/2;
+    CGFloat spaceHeight = (kScreenHeight - 44 - PKPreviewLayerHeight)/3;
+    PKRecordButtonVarticalHeight = kScreenHeight - 2 * spaceHeight;
+    PKOtherButtonVarticalHeight = kScreenHeight - spaceHeight;
     
     self.view.backgroundColor = [UIColor blackColor];
     
@@ -85,10 +88,10 @@ static CGFloat const PKRecordButtonWidth = 80;
     
     self.recordButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.recordButton setTitle:@"按住录" forState:UIControlStateNormal];
-    [self.recordButton setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    [self.recordButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     self.recordButton.titleLabel.font = [UIFont systemFontOfSize:15.0f];
     self.recordButton.frame = CGRectMake(0, 0, PKRecordButtonWidth, PKRecordButtonWidth);
-    self.recordButton.center = CGPointMake(kScreenWidth/2, PKAllButtonVarticalHeight);
+    self.recordButton.center = CGPointMake(kScreenWidth/2, PKRecordButtonVarticalHeight);
     self.recordButton.layer.cornerRadius = PKRecordButtonWidth/2;
     self.recordButton.layer.borderWidth = 1;
     self.recordButton.layer.borderColor = [UIColor redColor].CGColor;
@@ -98,13 +101,13 @@ static CGFloat const PKRecordButtonWidth = 80;
     self.playButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.playButton setImage:[UIImage imageNamed:@"PK_Play"] forState:UIControlStateNormal];
     [self.playButton sizeToFit];
-    self.playButton.center = CGPointMake((kScreenWidth-PKRecordButtonWidth)/2/2, PKAllButtonVarticalHeight);
+    self.playButton.center = CGPointMake((kScreenWidth-PKRecordButtonWidth)/2/2, PKOtherButtonVarticalHeight);
     [self.view addSubview:self.playButton];
     
     self.refreshButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.refreshButton setImage:[UIImage imageNamed:@"PK_Delete"] forState:UIControlStateNormal];
     [self.refreshButton sizeToFit];
-    self.refreshButton.center = CGPointMake(kScreenWidth-(kScreenWidth-PKRecordButtonWidth)/2/2, PKAllButtonVarticalHeight);
+    self.refreshButton.center = CGPointMake(kScreenWidth-(kScreenWidth-PKRecordButtonWidth)/2/2, PKOtherButtonVarticalHeight);
     [self.view addSubview:self.refreshButton];
     
     dispatch_async(dispatch_get_main_queue(), ^{
