@@ -10,4 +10,9 @@
 
 @interface PKShortVideoProgressBar : UIView
 
+- (instancetype)initWithFrame:(CGRect)frame themeColor:(UIColor *)themeColor duration:(NSTimeInterval)duration;
+- (void)play;
+- (void)stop;
+- (void)restore;
+
 @end

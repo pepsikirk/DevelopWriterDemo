@@ -24,6 +24,8 @@ static CGFloat const PKRecordButtonWidth = 90;
 @property (nonatomic, strong) NSURL *outputFileURL;
 @property (nonatomic, assign) CGSize outputSize;
 
+@property (nonatomic, strong) UIColor *themeColor;
+
 @property (nonatomic, assign) NSTimeInterval beginRecordTime;
 
 @property (nonatomic, strong) UIButton *recordButton;
@@ -39,12 +41,13 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 #pragma mark - Init 
 
-- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL outputSize:(CGSize)outputSize {
+- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL outputSize:(CGSize)outputSize themeColor:(UIColor *)themeColor {
     self = [super init];
     if (self) {
+        _themeColor = themeColor;
         _outputFileURL = outputFileURL;
         _outputSize = outputSize;
-        _videoMaxTime = 6;
+        _videoDurationTime = 6;
     }
     return self;
 }
@@ -72,7 +75,8 @@ static CGFloat const PKRecordButtonWidth = 90;
     
     UIBarButtonItem *flexible = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     
-    UIBarButtonItem *transformItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCamera target:self action:@selector(transfromCamera)];
+    UIBarButtonItem *transformItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"PK_Camera_turn"] style:UIBarButtonItemStyleDone target:self action:@selector(transfromCamera)];
+    transformItem.tintColor = [UIColor whiteColor];
     
     [toolbar setItems:@[cancelItem,flexible,transformItem]];
     
@@ -86,15 +90,18 @@ static CGFloat const PKRecordButtonWidth = 90;
     previewLayer.frame = CGRectMake(0, 44, kScreenWidth, PKPreviewLayerHeight);
     [self.view.layer insertSublayer:previewLayer atIndex:0];
     
-    self.recordButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    self.progressBar = [[PKShortVideoProgressBar alloc] initWithFrame:CGRectMake(0, 44 + PKPreviewLayerHeight - 4, kScreenWidth, 5) themeColor:self.themeColor duration:self.videoDurationTime];
+    [self.view addSubview:self.progressBar];
+    
+    self.recordButton = [UIButton buttonWithType:UIButtonTypeSystem];
     [self.recordButton setTitle:@"按住录" forState:UIControlStateNormal];
-    [self.recordButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    self.recordButton.titleLabel.font = [UIFont systemFontOfSize:15.0f];
+    [self.recordButton setTitleColor:self.themeColor forState:UIControlStateNormal];
+    self.recordButton.titleLabel.font = [UIFont systemFontOfSize:17.0f];
     self.recordButton.frame = CGRectMake(0, 0, PKRecordButtonWidth, PKRecordButtonWidth);
     self.recordButton.center = CGPointMake(kScreenWidth/2, PKRecordButtonVarticalHeight);
     self.recordButton.layer.cornerRadius = PKRecordButtonWidth/2;
-    self.recordButton.layer.borderWidth = 1;
-    self.recordButton.layer.borderColor = [UIColor redColor].CGColor;
+    self.recordButton.layer.borderWidth = 2;
+    self.recordButton.layer.borderColor = self.themeColor.CGColor;
     self.recordButton.layer.masksToBounds = YES;
     [self.view addSubview:self.recordButton];
     
