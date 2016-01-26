@@ -36,6 +36,8 @@
 - (void)startRecording;
 - (void)stopRecording;
 
+- (void)swapFrontAndBackCameras;
+
 - (AVCaptureVideoPreviewLayer *)previewLayer;
 
 @end

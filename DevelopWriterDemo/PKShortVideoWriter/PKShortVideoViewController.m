@@ -58,11 +58,12 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
     // Do any additional setup after loading the view, typically from a nib.
-    PKPreviewLayerHeight = 3/4.0 * kScreenWidth;
-    CGFloat spaceHeight = (kScreenHeight - 44 - PKPreviewLayerHeight)/3;
-    PKRecordButtonVarticalHeight = kScreenHeight - 2 * spaceHeight;
-    PKOtherButtonVarticalHeight = kScreenHeight - spaceHeight;
+    PKPreviewLayerHeight = ceilf(3/4.0 * kScreenWidth);
+    CGFloat spaceHeight = ceilf( (kScreenHeight - 44 - PKPreviewLayerHeight)/3 );
+    PKRecordButtonVarticalHeight = ceilf( kScreenHeight - 2 * spaceHeight );
+    PKOtherButtonVarticalHeight = ceilf( kScreenHeight - spaceHeight );
     
     self.view.backgroundColor = [UIColor blackColor];
     
@@ -75,7 +76,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     
     UIBarButtonItem *flexible = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     
-    UIBarButtonItem *transformItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"PK_Camera_turn"] style:UIBarButtonItemStyleDone target:self action:@selector(transfromCamera)];
+    UIBarButtonItem *transformItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"PK_Camera_turn"] style:UIBarButtonItemStyleDone target:self action:@selector(swapCamera)];
     transformItem.tintColor = [UIColor whiteColor];
     
     [toolbar setItems:@[cancelItem,flexible,transformItem]];
@@ -90,7 +91,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     previewLayer.frame = CGRectMake(0, 44, kScreenWidth, PKPreviewLayerHeight);
     [self.view.layer insertSublayer:previewLayer atIndex:0];
     
-    self.progressBar = [[PKShortVideoProgressBar alloc] initWithFrame:CGRectMake(0, 44 + PKPreviewLayerHeight - 4, kScreenWidth, 5) themeColor:self.themeColor duration:self.videoDurationTime];
+    self.progressBar = [[PKShortVideoProgressBar alloc] initWithFrame:CGRectMake(0, 44 + PKPreviewLayerHeight - 5, kScreenWidth, 5) themeColor:self.themeColor duration:self.videoDurationTime];
     [self.view addSubview:self.progressBar];
     
     self.recordButton = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -103,6 +104,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     self.recordButton.layer.borderWidth = 2;
     self.recordButton.layer.borderColor = self.themeColor.CGColor;
     self.recordButton.layer.masksToBounds = YES;
+    [self recordButtonAction];
     [self.view addSubview:self.recordButton];
     
     self.playButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -136,20 +138,20 @@ static CGFloat const PKRecordButtonWidth = 90;
 #pragma mark - Private 
 
 - (void)cancelShoot {
-    [self dismissViewControllerAnimated:YES completion:nil];
+    [self dismissViewControllerAnimated:YES completion:NULL];
 }
 
-- (void)transfromCamera {
-    
+- (void)swapCamera {
+    [self.writer swapFrontAndBackCameras];
 }
 
-- (void)recordButtonTarget {
+- (void)recordButtonAction {
     [self.recordButton removeTarget:self action:NULL forControlEvents:UIControlEventAllEvents];
     [self.recordButton addTarget:self action:@selector(toggleRecording) forControlEvents:UIControlEventTouchDown];
     [self.recordButton addTarget:self action:@selector(buttonStopRecording) forControlEvents:UIControlEventTouchUpInside|UIControlEventTouchUpOutside];
 }
 
-- (void)sendButtonTarget {
+- (void)sendButtonAction  {
     [self.recordButton removeTarget:self action:NULL forControlEvents:UIControlEventAllEvents];
     [self.recordButton addTarget:self action:@selector(sendVideo) forControlEvents:UIControlEventTouchUpInside];
     [self.refreshButton addTarget:self action:@selector(refreshView) forControlEvents:UIControlEventTouchUpInside];
@@ -160,11 +162,13 @@ static CGFloat const PKRecordButtonWidth = 90;
     [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:nil];
     
     [self.recordButton setTitle:@"按住拍摄" forState:UIControlStateNormal];
-    [self recordButtonTarget];
+    [self recordButtonAction ];
     [self.playButton removeFromSuperview];
     self.playButton = nil;
     [self.refreshButton removeFromSuperview];
     self.refreshButton = nil;
+    
+    [self.progressBar restore];
 }
 
 - (void)playVideo {
@@ -179,6 +183,8 @@ static CGFloat const PKRecordButtonWidth = 90;
     self.beginRecordTime = [NSDate date].timeIntervalSince1970;
 
     [self.writer startRecording];
+    
+    [self.progressBar play];
 }
 
 - (void)closeCamera {
@@ -188,6 +194,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 - (void)buttonStopRecording {
     [self closeCamera];
+    [self.progressBar stop];
 }
 
 - (void)sendVideo {

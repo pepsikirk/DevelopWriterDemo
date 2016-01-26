@@ -18,6 +18,7 @@ static NSInteger const PKProgressItemWidth = 5;
 
 @property (strong, nonatomic) UIView *progressItem;
 @property (strong, nonatomic) UIView *progressingView;
+@property (nonatomic, strong) UIView *coverView;
 
 @end
 
@@ -31,12 +32,15 @@ static NSInteger const PKProgressItemWidth = 5;
         _themeColor = themeColor;
         _duration = duration;
         
-        self.backgroundColor = [UIColor blackColor];
-        self.alpha = 0.4f;
+        _coverView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, frame.size.height)];
+        _coverView.backgroundColor = [UIColor blackColor];
+        _coverView.alpha = 0.4f;
+        [self addSubview:_coverView];
         
         _progressItem = [[UIView alloc] initWithFrame:CGRectMake(0, 0, PKProgressItemWidth, frame.size.height)];
         _progressItem.backgroundColor = [UIColor whiteColor];
         [self addSubview:_progressItem];
+        
         _progressingView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, frame.size.height)];
         _progressingView.backgroundColor = themeColor;
         [self addSubview:_progressingView];
