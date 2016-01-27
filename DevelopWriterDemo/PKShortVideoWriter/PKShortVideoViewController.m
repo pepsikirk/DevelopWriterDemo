@@ -7,7 +7,7 @@
 //
 
 #import "PKShortVideoViewController.h"
-#import "PKShortVideoWriter.h"
+#import "PKShortVideoCaptureSession.h"
 #import "PKShortVideoProgressBar.h"
 #import "PKUtiltiies.h"
 #import <AVFoundation/AVFoundation.h>
@@ -33,7 +33,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 @property (nonatomic, strong) UIButton *playButton;
 
 @property (nonatomic, strong) PKShortVideoProgressBar *progressBar;
-@property (nonatomic, strong) PKShortVideoWriter *writer;
+@property (nonatomic, strong) PKShortVideoCaptureSession *session;
 
 @end
 
@@ -84,9 +84,9 @@ static CGFloat const PKRecordButtonWidth = 90;
     NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
     NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mp4"]];
     
-    self.writer = [[PKShortVideoWriter alloc] initWithOutputFileURL:[NSURL fileURLWithPath:outputFilePath] outputSize:CGSizeMake(320, 240)];
+    self.session = [[PKShortVideoCaptureSession alloc] initWithOutputFileURL:[NSURL fileURLWithPath:outputFilePath] outputSize:CGSizeMake(320, 240)];
     
-    AVCaptureVideoPreviewLayer *previewLayer = [self.writer previewLayer];
+    AVCaptureVideoPreviewLayer *previewLayer = [self.session previewLayer];
     previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     previewLayer.frame = CGRectMake(0, 44, kScreenWidth, PKPreviewLayerHeight);
     [self.view.layer insertSublayer:previewLayer atIndex:0];
@@ -120,7 +120,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     [self.view addSubview:self.refreshButton];
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.writer startRunning];
+        [self.session startRunning];
     });
 }
 
@@ -142,7 +142,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)swapCamera {
-    [self.writer swapFrontAndBackCameras];
+    [self.session swapFrontAndBackCameras];
 }
 
 - (void)recordButtonAction {
@@ -182,14 +182,14 @@ static CGFloat const PKRecordButtonWidth = 90;
     
     self.beginRecordTime = [NSDate date].timeIntervalSince1970;
 
-    [self.writer startRecording];
+    [self.session startRecording];
     
     [self.progressBar play];
 }
 
 - (void)closeCamera {
 
-    [_writer stopRecording];
+    [_session stopRecording];
 }
 
 - (void)buttonStopRecording {

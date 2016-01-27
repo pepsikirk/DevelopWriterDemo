@@ -1,43 +1,37 @@
 //
-//  PKShortVideoWriter.h
+//  PKAssetWriter.h
 //  DevelopWriterDemo
 //
-//  Created by jiangxincai on 16/1/14.
+//  Created by jiangxincai on 16/1/17.
 //  Copyright © 2016年 pepsikirk. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
+#import <CoreMedia/CoreMedia.h>
+#import <AVFoundation/AVFoundation.h>
 
-@class PKShortVideoWriter;
+@protocol PKShortVideoWriterDelegate;
 
-@protocol PKShortWriterDelegate <NSObject>
+@interface PKShortVideoWriter : NSObject
 
-@required
+@property (nonatomic, weak) id<PKShortVideoWriterDelegate> delegate;
 
-- (void)writerDidBeginRecording:(PKShortVideoWriter *)writer;
-- (void)writer:(PKShortVideoWriter *)writer didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error;
+- (instancetype)initWithURL:(NSURL *)URL;
+- (void)addVideoTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)videoSettings;
+- (void)addAudioTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)audioSettings;
+
+- (void)prepareToRecord;
+- (void)appendVideoSampleBuffer:(CMSampleBufferRef)sampleBuffer;
+- (void)appendAudioSampleBuffer:(CMSampleBufferRef)sampleBuffer;
+- (void)finishRecording;
 
 @end
 
 
+@protocol PKShortVideoWriterDelegate <NSObject>
 
-@class AVCaptureVideoPreviewLayer;
-
-@interface PKShortVideoWriter : NSObject
-
-@property (nonatomic, weak) id<PKShortWriterDelegate> delegate;
-
-- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL outputSize:(CGSize)outputSize;
-
-- (void)startRunning;
-- (void)stopRunning;
-
-- (void)startRecording;
-- (void)stopRecording;
-
-- (void)swapFrontAndBackCameras;
-
-- (AVCaptureVideoPreviewLayer *)previewLayer;
+- (void)writerDidFinishPreparing:(PKShortVideoWriter *)writer;
+- (void)writer:(PKShortVideoWriter *)writer didFailWithError:(NSError *)error;
+- (void)writerDidFinishRecording:(PKShortVideoWriter *)writer;
 
 @end
