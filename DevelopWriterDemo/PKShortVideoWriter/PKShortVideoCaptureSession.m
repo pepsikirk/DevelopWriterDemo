@@ -34,16 +34,16 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 @property (nonatomic, strong) AVCaptureConnection *audioConnection;
 @property (nonatomic, strong) AVCaptureConnection *videoConnection;
 
-@property (nonatomic, strong) NSDictionary *videoCompressionSettings;
-@property (nonatomic, strong) NSDictionary *audioCompressionSettings;
-
 @property (nonatomic, strong) AVCaptureSession *captureSession;
 @property (nonatomic, strong) AVCaptureDevice *cameraDevice;
 @property (nonatomic, strong) AVCaptureVideoPreviewLayer *previewLayer;
 
-@property (nonatomic, assign) RecordingStatus recordingStatus;
+@property (nonatomic, strong) NSDictionary *videoCompressionSettings;
+@property (nonatomic, strong) NSDictionary *audioCompressionSettings;
 @property(nonatomic, retain) __attribute__((NSObject)) CMFormatDescriptionRef outputVideoFormatDescription;
 @property(nonatomic, retain) __attribute__((NSObject)) CMFormatDescriptionRef outputAudioFormatDescription;
+
+@property (nonatomic, assign) RecordingStatus recordingStatus;
 
 @property(nonatomic, retain) PKShortVideoWriter *assetWriter;
 
@@ -176,14 +176,6 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
     [self setCompressionSettings];
 }
 
-- (void)setupVideoPipelineWithInputFormatDescription:(CMFormatDescriptionRef)inputFormatDescription {
-    self.outputVideoFormatDescription = inputFormatDescription;
-}
-
-- (void)teardownVideoPipeline {
-    self.outputVideoFormatDescription = nil;
-}
-
 - (void)setCompressionSettings {
     //    _videoCompressionSettings = [_videoDataOutput recommendedVideoSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
     NSInteger numPixels = self.outputSize.width * self.outputSize.height;
@@ -191,13 +183,13 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
     NSInteger bitsPerSecond = numPixels * bitsPerPixel;
     
     NSDictionary *compressionProperties = @{ AVVideoAverageBitRateKey : @(bitsPerSecond),
-                                             AVVideoExpectedSourceFrameRateKey : @(30),
-                                             AVVideoMaxKeyFrameIntervalKey : @(30) };
+                                    AVVideoExpectedSourceFrameRateKey : @(30),
+                                        AVVideoMaxKeyFrameIntervalKey : @(30) };
     
     self.videoCompressionSettings = @{ AVVideoCodecKey : AVVideoCodecH264,
-                                   AVVideoWidthKey : @(self.outputSize.width),
-                                   AVVideoHeightKey : @(self.outputSize.height),
-                                   AVVideoCompressionPropertiesKey : compressionProperties };
+                                       AVVideoWidthKey : @(self.outputSize.width),
+                                      AVVideoHeightKey : @(self.outputSize.height),
+                       AVVideoCompressionPropertiesKey : compressionProperties };
     
     //    _audioCompressionSettings = [_audioDataOutput recommendedAudioSettingsForAssetWriterWithOutputFileType:AVFileTypeMPEG4];
     self.audioCompressionSettings = @{ AVEncoderBitRatePerChannelKey : @(28000),
@@ -213,13 +205,8 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
     
     if (connection == self.videoConnection){
         if (self.outputVideoFormatDescription == nil) {
-            // Don't render the first sample buffer.
-            // This gives us one frame interval (33ms at 30fps) for setupVideoPipelineWithInputFormatDescription: to complete.
-            // Ideally this would be done asynchronously to ensure frames don't back up on slower devices.
-            
-            //TODO: outputVideoFormatDescription should be updated whenever video configuration is changed (frame rate, etc.)
-            //Currently we don't use the outputVideoFormatDescription in IDAssetWriterRecoredSession
-            [self setupVideoPipelineWithInputFormatDescription:formatDescription];
+            //不渲染首帧
+            self.outputVideoFormatDescription = formatDescription;
         } else {
             self.outputVideoFormatDescription = formatDescription;
             @synchronized(self) {
@@ -263,8 +250,6 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
             NSLog(@"Expected to be in StoppingRecording state");
             return;
         }
-        // No state transition, we are still in the process of stopping.
-        // We will be stopped once we save to the assets library.
     }
     self.assetWriter = nil;
     
@@ -276,7 +261,6 @@ typedef NS_ENUM( NSInteger, RecordingStatus ) {
 
 #pragma mark - Recording State Machine
 
-// call under @synchonized( self )
 - (void)transitionToRecordingStatus:(RecordingStatus)newStatus error:(NSError *)error {
     RecordingStatus oldStatus = self.recordingStatus;
     self.recordingStatus = newStatus;

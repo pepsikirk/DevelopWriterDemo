@@ -14,9 +14,9 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     PKWriterStatusRecording,
     PKWriterStatusFinishingRecordingPart1, // waiting for inflight buffers to be appended
     PKWriterStatusFinishingRecordingPart2, // calling finish writing on the asset writer
-    PKWriterStatusFinished,	// terminal state
-    PKWriterStatusFailed		// terminal state
-}; // internal state machine
+    PKWriterStatusFinished,
+    PKWriterStatusFailed
+};
 
 @interface PKShortVideoWriter ()
 
@@ -368,22 +368,18 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     } );
 }
 
-// call under @synchonized( self )
-- (void)transitionToStatus:(PKWriterStatus)newStatus error:(NSError *)error
-{
+- (void)transitionToStatus:(PKWriterStatus)newStatus error:(NSError *)error {
     BOOL shouldNotifyDelegate = NO;
     
     if (newStatus != _status){
-        // terminal states
         if ((newStatus == PKWriterStatusFinished) || (newStatus == PKWriterStatusFailed)){
             shouldNotifyDelegate = YES;
-            // make sure there are no more sample buffers in flight before we tear down the asset writer and inputs
             
             dispatch_async(_writingQueue, ^{
                 _assetWriter = nil;
                 _videoInput = nil;
                 _audioInput = nil;
-                if (newStatus == PKWriterStatusFailed) {
+                if (newStatus == PKWriterStatusFailed) {//失败删除
                     [[NSFileManager defaultManager] removeItemAtURL:_URL error:NULL];
                 }
             } );
