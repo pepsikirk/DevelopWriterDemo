@@ -16,7 +16,8 @@
 
 @property (nonatomic, weak) id<PKShortVideoWriterDelegate> delegate;
 
-- (instancetype)initWithURL:(NSURL *)URL;
+- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL;
+
 - (void)addVideoTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)videoSettings;
 - (void)addAudioTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)audioSettings;
 

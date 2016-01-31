@@ -25,7 +25,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 @property (nonatomic) dispatch_queue_t writingQueue;
 @property (nonatomic) dispatch_queue_t delegateCallbackQueue;
 
-@property (nonatomic) NSURL *URL;
+@property (nonatomic) NSURL *outputFileURL;
 
 @property (nonatomic) AVAssetWriter *assetWriter;
 @property (nonatomic) BOOL haveStartedSession;
@@ -44,9 +44,8 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 @implementation PKShortVideoWriter
 
 
-- (instancetype)initWithURL:(NSURL *)URL
-{
-    if (!URL) {
+- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL {
+    if (!outputFileURL) {
         return nil;
     }
     
@@ -56,7 +55,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
         _writingQueue = dispatch_queue_create( "com.example.assetwriter.writing", DISPATCH_QUEUE_SERIAL );
         
         _videoTrackTransform = CGAffineTransformMakeRotation(M_PI_2); //portrait orientation
-        _URL = URL;
+        _outputFileURL = outputFileURL;
     }
     return self;
 }
@@ -124,8 +123,8 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
         {
             NSError *error = nil;
             // AVAssetWriter will not write over an existing file.
-            [[NSFileManager defaultManager] removeItemAtURL:_URL error:NULL];
-            _assetWriter = [[AVAssetWriter alloc] initWithURL:_URL fileType:AVFileTypeMPEG4 error:&error];
+            [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
+            _assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
             
             // Create and add inputs
             if (!error && _videoTrackSourceFormatDescription) {
@@ -380,7 +379,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
                 _videoInput = nil;
                 _audioInput = nil;
                 if (newStatus == PKWriterStatusFailed) {//失败删除
-                    [[NSFileManager defaultManager] removeItemAtURL:_URL error:NULL];
+                    [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
                 }
             } );
         } else if (newStatus == PKWriterStatusRecording){
