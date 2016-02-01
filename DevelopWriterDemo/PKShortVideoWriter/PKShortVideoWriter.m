@@ -31,13 +31,15 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 @property (nonatomic) BOOL haveStartedSession;
 
 @property (nonatomic) CMFormatDescriptionRef audioTrackSourceFormatDescription;
-@property (nonatomic) NSDictionary *audioTrackSettings;
-@property (nonatomic) AVAssetWriterInput *audioInput;
-
 @property (nonatomic) CMFormatDescriptionRef videoTrackSourceFormatDescription;
-@property (nonatomic) CGAffineTransform videoTrackTransform;
+
+@property (nonatomic) NSDictionary *audioTrackSettings;
 @property (nonatomic) NSDictionary *videoTrackSettings;
+
+@property (nonatomic) AVAssetWriterInput *audioInput;
 @property (nonatomic) AVAssetWriterInput *videoInput;
+
+@property (nonatomic) CGAffineTransform videoTrackTransform;
 
 @end
 
@@ -60,58 +62,52 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     return self;
 }
 
-- (void)addVideoTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)videoSettings
-{
-    if ( formatDescription == NULL ){
+- (void)addVideoTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)videoSettings {
+    if (formatDescription == NULL){
         @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"NULL format description" userInfo:nil];
         return;
     }
-    @synchronized( self )
-    {
-        if (_status != PKWriterStatusIdle){
+    @synchronized(self) {
+        if (self.status != PKWriterStatusIdle){
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add tracks while not idle" userInfo:nil];
             return;
         }
         
-        if(_videoTrackSourceFormatDescription ){
+        if(self.videoTrackSourceFormatDescription ){
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add more than one video track" userInfo:nil];
             return;
         }
         
-        _videoTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain( formatDescription );
-        _videoTrackSettings = [videoSettings copy];
+        self.videoTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain( formatDescription );
+        self.videoTrackSettings = [videoSettings copy];
     }
 }
 
-- (void)addAudioTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)audioSettings
-{
-    if ( formatDescription == NULL ) {
+- (void)addAudioTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)audioSettings {
+    if (formatDescription == NULL) {
         @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"NULL format description" userInfo:nil];
         return;
     }
     
-    @synchronized( self )
-    {
-        if ( _status != PKWriterStatusIdle ) {
+    @synchronized(self) {
+        if (self.status != PKWriterStatusIdle) {
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add tracks while not idle" userInfo:nil];
             return;
         }
         
-        if ( _audioTrackSourceFormatDescription ) {
+        if (self.audioTrackSourceFormatDescription) {
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add more than one audio track" userInfo:nil];
             return;
         }
         
-        _audioTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain( formatDescription );
-        _audioTrackSettings = [audioSettings copy];
+        self.audioTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain(formatDescription);
+        self.audioTrackSettings = [audioSettings copy];
     }
 }
 
-- (void)prepareToRecord
-{
-    @synchronized( self )
-    {
-        if (_status != PKWriterStatusIdle){
+- (void)prepareToRecord {
+    @synchronized(self) {
+        if (self.status != PKWriterStatusIdle){
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Already prepared, cannot prepare again" userInfo:nil];
             return;
         }
@@ -119,29 +115,27 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     }
     
     dispatch_async( dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_LOW, 0 ), ^{
-        @autoreleasepool
-        {
+        @autoreleasepool {
             NSError *error = nil;
             // AVAssetWriter will not write over an existing file.
             [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
-            _assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
+            self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
             
             // Create and add inputs
-            if (!error && _videoTrackSourceFormatDescription) {
-                [self setupAssetWriterVideoInputWithSourceFormatDescription:_videoTrackSourceFormatDescription transform:_videoTrackTransform settings:_videoTrackSettings error:&error];
+            if (!error && self.videoTrackSourceFormatDescription) {
+                [self setupAssetWriterVideoInputWithSourceFormatDescription:self.videoTrackSourceFormatDescription transform:self.videoTrackTransform settings:self.videoTrackSettings error:&error];
             }
             if(!error && _audioTrackSourceFormatDescription) {
-                [self setupAssetWriterAudioInputWithSourceFormatDescription:_audioTrackSourceFormatDescription settings:_audioTrackSettings error:&error];
+                [self setupAssetWriterAudioInputWithSourceFormatDescription:self.audioTrackSourceFormatDescription settings:self.audioTrackSettings error:&error];
             }
             if(!error) {
-                BOOL success = [_assetWriter startWriting];
+                BOOL success = [self.assetWriter startWriting];
                 if (!success) {
-                    error = _assetWriter.error;
+                    error = self.assetWriter.error;
                 }
             }
             
-            @synchronized(self)
-            {
+            @synchronized(self) {
                 if (error) {
                     [self transitionToStatus:PKWriterStatusFailed error:error];
                 } else {
@@ -152,23 +146,18 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     } );
 }
 
-- (void)appendVideoSampleBuffer:(CMSampleBufferRef)sampleBuffer
-{
+- (void)appendVideoSampleBuffer:(CMSampleBufferRef)sampleBuffer {
     [self appendSampleBuffer:sampleBuffer ofMediaType:AVMediaTypeVideo];
 }
 
-- (void)appendAudioSampleBuffer:(CMSampleBufferRef)sampleBuffer
-{
+- (void)appendAudioSampleBuffer:(CMSampleBufferRef)sampleBuffer {
     [self appendSampleBuffer:sampleBuffer ofMediaType:AVMediaTypeAudio];
 }
 
-- (void)finishRecording
-{
-    @synchronized(self)
-    {
+- (void)finishRecording {
+    @synchronized(self) {
         BOOL shouldFinishRecording = NO;
-        switch (_status)
-        {
+        switch (self.status) {
             case PKWriterStatusIdle:
             case PKWriterStatusPreparingToRecord:
             case PKWriterStatusFinishingRecordingPart1:
@@ -195,12 +184,10 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     }
     
     dispatch_async( _writingQueue, ^{
-        @autoreleasepool
-        {
-            @synchronized(self)
-            {
+        @autoreleasepool {
+            @synchronized(self) {
                 // We may have transitioned to an error state as we appended inflight buffers. In that case there is nothing to do now.
-                if ( _status != PKWriterStatusFinishingRecordingPart1 ) {
+                if (self.status != PKWriterStatusFinishingRecordingPart1) {
                     return;
                 }
                 
@@ -208,10 +195,9 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
                 // We transition to MovieRecorderStatusFinishingRecordingPart2 while on _writingQueue, which guarantees that no more buffers will be appended.
                 [self transitionToStatus:PKWriterStatusFinishingRecordingPart2 error:nil];
             }
-            [_assetWriter finishWritingWithCompletionHandler:^{
-                @synchronized( self )
-                {
-                    NSError *error = _assetWriter.error;
+            [self.assetWriter finishWritingWithCompletionHandler:^{
+                @synchronized(self) {
+                    NSError *error = self.assetWriter.error;
                     if(error){
                         [self transitionToStatus:PKWriterStatusFailed error:error];
                     }
@@ -227,18 +213,17 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 
 #pragma mark - Private methods
 
-- (BOOL)setupAssetWriterAudioInputWithSourceFormatDescription:(CMFormatDescriptionRef)audioFormatDescription settings:(NSDictionary *)audioSettings error:(NSError **)errorOut
-{
+- (BOOL)setupAssetWriterAudioInputWithSourceFormatDescription:(CMFormatDescriptionRef)audioFormatDescription settings:(NSDictionary *)audioSettings error:(NSError **)errorOut {
     if (!audioSettings) {
         audioSettings = @{ AVFormatIDKey : @(kAudioFormatMPEG4AAC) };
     }
     
-    if ( [_assetWriter canApplyOutputSettings:audioSettings forMediaType:AVMediaTypeAudio] ){
-        _audioInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio outputSettings:audioSettings sourceFormatHint:audioFormatDescription];
-        _audioInput.expectsMediaDataInRealTime = YES;
+    if ( [self.assetWriter canApplyOutputSettings:audioSettings forMediaType:AVMediaTypeAudio] ){
+        self.audioInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio outputSettings:audioSettings sourceFormatHint:audioFormatDescription];
+        self.audioInput.expectsMediaDataInRealTime = YES;
         
-        if ([_assetWriter canAddInput:_audioInput]){
-            [_assetWriter addInput:_audioInput];
+        if ([self.assetWriter canAddInput:self.audioInput]){
+            [self.assetWriter addInput:self.audioInput];
         } else {
             if (errorOut ) {
                 *errorOut = [self cannotSetupInputError];
@@ -246,8 +231,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
             return NO;
         }
     }
-    else
-    {
+    else {
         if (errorOut) {
             *errorOut = [self cannotSetupInputError];
         }
@@ -257,19 +241,18 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     return YES;
 }
 
-- (BOOL)setupAssetWriterVideoInputWithSourceFormatDescription:(CMFormatDescriptionRef)videoFormatDescription transform:(CGAffineTransform)transform settings:(NSDictionary *)videoSettings error:(NSError **)errorOut
-{
+- (BOOL)setupAssetWriterVideoInputWithSourceFormatDescription:(CMFormatDescriptionRef)videoFormatDescription transform:(CGAffineTransform)transform settings:(NSDictionary *)videoSettings error:(NSError **)errorOut {
     if (!videoSettings){
         videoSettings = [self fallbackVideoSettingsForSourceFormatDescription:videoFormatDescription];
     }
     
-    if ([_assetWriter canApplyOutputSettings:videoSettings forMediaType:AVMediaTypeVideo]){
-        _videoInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeVideo outputSettings:videoSettings sourceFormatHint:videoFormatDescription];
-        _videoInput.expectsMediaDataInRealTime = YES;
-        _videoInput.transform = transform;
+    if ([self.assetWriter canApplyOutputSettings:videoSettings forMediaType:AVMediaTypeVideo]){
+        self.videoInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeVideo outputSettings:videoSettings sourceFormatHint:videoFormatDescription];
+        self.videoInput.expectsMediaDataInRealTime = YES;
+        self.videoInput.transform = transform;
         
-        if ([_assetWriter canAddInput:_videoInput]){
-            [_assetWriter addInput:_videoInput];
+        if ([self.assetWriter canAddInput:self.videoInput]){
+            [self.assetWriter addInput:self.videoInput];
         } else {
             if ( errorOut ) {
                 *errorOut = [self cannotSetupInputError];
@@ -285,8 +268,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     return YES;
 }
 
-- (NSDictionary *)fallbackVideoSettingsForSourceFormatDescription:(CMFormatDescriptionRef)videoFormatDescription
-{
+- (NSDictionary *)fallbackVideoSettingsForSourceFormatDescription:(CMFormatDescriptionRef)videoFormatDescription {
     float bitsPerPixel;
     CMVideoDimensions dimensions = CMVideoFormatDescriptionGetDimensions(videoFormatDescription);
     int numPixels = dimensions.width * dimensions.height;
@@ -315,46 +297,43 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 
 }
 
-- (void)appendSampleBuffer:(CMSampleBufferRef)sampleBuffer ofMediaType:(NSString *)mediaType
-{
+- (void)appendSampleBuffer:(CMSampleBufferRef)sampleBuffer ofMediaType:(NSString *)mediaType {
     if(sampleBuffer == NULL){
         @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"NULL sample buffer" userInfo:nil];
         return;
     }
     
     @synchronized(self){
-        if (_status < PKWriterStatusRecording){
+        if (self.status < PKWriterStatusRecording){
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Not ready to record yet" userInfo:nil];
             return;
         }
     }
     
     CFRetain(sampleBuffer);
-    dispatch_async( _writingQueue, ^{
-        @autoreleasepool
-        {
-            @synchronized(self)
-            {
+    dispatch_async( self.writingQueue, ^{
+        @autoreleasepool {
+            @synchronized(self) {
                 // From the client's perspective the movie recorder can asynchronously transition to an error state as the result of an append.
                 // Because of this we are lenient when samples are appended and we are no longer recording.
                 // Instead of throwing an exception we just release the sample buffers and return.
-                if (_status > PKWriterStatusFinishingRecordingPart1){
+                if (self.status > PKWriterStatusFinishingRecordingPart1){
                     CFRelease(sampleBuffer);
                     return;
                 }
             }
             
-            if(!_haveStartedSession && mediaType == AVMediaTypeVideo) {
-                [_assetWriter startSessionAtSourceTime:CMSampleBufferGetPresentationTimeStamp(sampleBuffer)];
-                _haveStartedSession = YES;
+            if(!self.haveStartedSession && mediaType == AVMediaTypeVideo) {
+                [self.assetWriter startSessionAtSourceTime:CMSampleBufferGetPresentationTimeStamp(sampleBuffer)];
+                self.haveStartedSession = YES;
             }
             
-            AVAssetWriterInput *input = ( mediaType == AVMediaTypeVideo ) ? _videoInput : _audioInput;
+            AVAssetWriterInput *input = ( mediaType == AVMediaTypeVideo ) ? self.videoInput : self.audioInput;
             
             if(input.readyForMoreMediaData){
                 BOOL success = [input appendSampleBuffer:sampleBuffer];
                 if (!success){
-                    NSError *error = _assetWriter.error;
+                    NSError *error = self.assetWriter.error;
                     @synchronized(self){
                         [self transitionToStatus:PKWriterStatusFailed error:error];
                     }
@@ -370,14 +349,14 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 - (void)transitionToStatus:(PKWriterStatus)newStatus error:(NSError *)error {
     BOOL shouldNotifyDelegate = NO;
     
-    if (newStatus != _status){
+    if (newStatus != self.status){
         if ((newStatus == PKWriterStatusFinished) || (newStatus == PKWriterStatusFailed)){
             shouldNotifyDelegate = YES;
             
-            dispatch_async(_writingQueue, ^{
-                _assetWriter = nil;
-                _videoInput = nil;
-                _audioInput = nil;
+            dispatch_async(self.writingQueue, ^{
+                self.assetWriter = nil;
+                self.videoInput = nil;
+                self.audioInput = nil;
                 if (newStatus == PKWriterStatusFailed) {//失败删除
                     [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
                 }
@@ -385,14 +364,13 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
         } else if (newStatus == PKWriterStatusRecording){
             shouldNotifyDelegate = YES;
         }
-        _status = newStatus;
+        self.status = newStatus;
     }
     
     if (shouldNotifyDelegate && self.delegate){
-        dispatch_async( _delegateCallbackQueue, ^{
+        dispatch_async( self.delegateCallbackQueue, ^{
             
-            @autoreleasepool
-            {
+            @autoreleasepool {
                 switch(newStatus){
                     case PKWriterStatusRecording:
                         [self.delegate writerDidFinishPreparing:self];
@@ -411,8 +389,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     }
 }
 
-- (NSError *)cannotSetupInputError
-{
+- (NSError *)cannotSetupInputError {
     NSString *localizedDescription = NSLocalizedString( @"Recording cannot be started", nil );
     NSString *localizedFailureReason = NSLocalizedString( @"Cannot setup asset writer input.", nil );
     NSDictionary *errorDict = @{ NSLocalizedDescriptionKey : localizedDescription,
