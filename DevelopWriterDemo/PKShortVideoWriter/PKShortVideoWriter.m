@@ -53,8 +53,8 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     
     self = [super init];
     if (self) {
-        _delegateCallbackQueue = dispatch_queue_create( "com.example.capturesession.writercallback", DISPATCH_QUEUE_SERIAL );
-        _writingQueue = dispatch_queue_create( "com.example.assetwriter.writing", DISPATCH_QUEUE_SERIAL );
+        _delegateCallbackQueue = dispatch_queue_create( "com.PKShortVideoWriter.writerDelegateCallback", DISPATCH_QUEUE_SERIAL );
+        _writingQueue = dispatch_queue_create( "com.PKShortVideoWriter.assetwriter", DISPATCH_QUEUE_SERIAL );
         
         _videoTrackTransform = CGAffineTransformMakeRotation(M_PI_2); //portrait orientation
         _outputFileURL = outputFileURL;
@@ -390,11 +390,9 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 }
 
 - (NSError *)cannotSetupInputError {
-    NSString *localizedDescription = NSLocalizedString( @"Recording cannot be started", nil );
-    NSString *localizedFailureReason = NSLocalizedString( @"Cannot setup asset writer input.", nil );
-    NSDictionary *errorDict = @{ NSLocalizedDescriptionKey : localizedDescription,
-                                 NSLocalizedFailureReasonErrorKey : localizedFailureReason };
-    return [NSError errorWithDomain:@"com.example" code:0 userInfo:errorDict];
+    NSDictionary *errorDict = @{ NSLocalizedDescriptionKey : @"Recording cannot be started",
+                                 NSLocalizedFailureReasonErrorKey : @"Cannot setup asset writer input." };
+    return [NSError errorWithDomain:@"com.PKShortVideoWriter" code:0 userInfo:errorDict];
 }
 
 @end

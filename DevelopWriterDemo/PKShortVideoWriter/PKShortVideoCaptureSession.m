@@ -59,11 +59,11 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         _outputFileURL = outputFileURL;
         _outputSize = outputSize;
         
-        _sessionQueue = dispatch_queue_create( "com.example.capturepipeline.session", DISPATCH_QUEUE_SERIAL );
+        _sessionQueue = dispatch_queue_create( "com.PKShortVideoWriter.sessionQueue", DISPATCH_QUEUE_SERIAL );
         
-        _audioDataOutputQueue = dispatch_queue_create( "com.example.capturesession.audiodata", DISPATCH_QUEUE_SERIAL );
+        _audioDataOutputQueue = dispatch_queue_create( "com.PKShortVideoWriter.audioOutput", DISPATCH_QUEUE_SERIAL );
 
-        _videoDataOutputQueue = dispatch_queue_create( "com.example.capturesession.videodata", DISPATCH_QUEUE_SERIAL );
+        _videoDataOutputQueue = dispatch_queue_create( "com.PKShortVideoWriter.videoOutput", DISPATCH_QUEUE_SERIAL );
         dispatch_set_target_queue( _videoDataOutputQueue, dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_HIGH, 0 ) );
         
         _captureSession = [self setupCaptureSession];
@@ -101,7 +101,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         [self transitionToRecordingStatus:PKRecordingStatusStartingRecording error:nil];
     }
     
-    self.assetWriter = [[PKShortVideoWriter alloc] initWithURL:self.outputFileURL];
+    self.assetWriter = [[PKShortVideoWriter alloc] initWithOutputFileURL:self.outputFileURL];
     if(self.outputAudioFormatDescription != nil){
         [self.assetWriter addAudioTrackWithSourceFormatDescription:self.outputAudioFormatDescription settings:self.audioCompressionSettings];
     }
