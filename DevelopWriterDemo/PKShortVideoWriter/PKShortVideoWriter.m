@@ -56,11 +56,14 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
         _delegateCallbackQueue = dispatch_queue_create( "com.PKShortVideoWriter.writerDelegateCallback", DISPATCH_QUEUE_SERIAL );
         _writingQueue = dispatch_queue_create( "com.PKShortVideoWriter.assetwriter", DISPATCH_QUEUE_SERIAL );
         
-        _videoTrackTransform = CGAffineTransformMakeRotation(M_PI_2); //portrait orientation
+        _videoTrackTransform = CGAffineTransformMakeRotation(M_PI_2);//人像方向
         _outputFileURL = outputFileURL;
     }
     return self;
 }
+
+
+#pragma mark - Public
 
 - (void)addVideoTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)videoSettings {
     if (formatDescription == NULL){
@@ -73,7 +76,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
             return;
         }
         
-        if(self.videoTrackSourceFormatDescription ){
+        if (self.videoTrackSourceFormatDescription ){
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add more than one video track" userInfo:nil];
             return;
         }
@@ -214,9 +217,6 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 #pragma mark - Private methods
 
 - (BOOL)setupAssetWriterAudioInputWithSourceFormatDescription:(CMFormatDescriptionRef)audioFormatDescription settings:(NSDictionary *)audioSettings error:(NSError **)errorOut {
-    if (!audioSettings) {
-        audioSettings = @{ AVFormatIDKey : @(kAudioFormatMPEG4AAC) };
-    }
     
     if ( [self.assetWriter canApplyOutputSettings:audioSettings forMediaType:AVMediaTypeAudio] ){
         self.audioInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio outputSettings:audioSettings sourceFormatHint:audioFormatDescription];
@@ -242,9 +242,6 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 }
 
 - (BOOL)setupAssetWriterVideoInputWithSourceFormatDescription:(CMFormatDescriptionRef)videoFormatDescription transform:(CGAffineTransform)transform settings:(NSDictionary *)videoSettings error:(NSError **)errorOut {
-    if (!videoSettings){
-        videoSettings = [self fallbackVideoSettingsForSourceFormatDescription:videoFormatDescription];
-    }
     
     if ([self.assetWriter canApplyOutputSettings:videoSettings forMediaType:AVMediaTypeVideo]){
         self.videoInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeVideo outputSettings:videoSettings sourceFormatHint:videoFormatDescription];
@@ -268,35 +265,6 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     return YES;
 }
 
-- (NSDictionary *)fallbackVideoSettingsForSourceFormatDescription:(CMFormatDescriptionRef)videoFormatDescription {
-    float bitsPerPixel;
-    CMVideoDimensions dimensions = CMVideoFormatDescriptionGetDimensions(videoFormatDescription);
-    int numPixels = dimensions.width * dimensions.height;
-    int bitsPerSecond;
-    
-    NSLog( @"No video settings provided, using default settings" );
-    
-    // Assume that lower-than-SD resolutions are intended for streaming, and use a lower bitrate
-    if ( numPixels < ( 640 * 480 ) ) {
-        bitsPerPixel = 4.05; // This bitrate approximately matches the quality produced by AVCaptureSessionPresetMedium or Low.
-    }
-    else {
-        bitsPerPixel = 10.1; // This bitrate approximately matches the quality produced by AVCaptureSessionPresetHigh.
-    }
-    
-    bitsPerSecond = numPixels * bitsPerPixel;
-    
-    NSDictionary *compressionProperties = @{ AVVideoAverageBitRateKey : @(bitsPerSecond),
-                                             AVVideoExpectedSourceFrameRateKey : @(30),
-                                             AVVideoMaxKeyFrameIntervalKey : @(30) };
-    
-    return @{ AVVideoCodecKey : AVVideoCodecH264,
-                       AVVideoWidthKey : @(dimensions.width),
-                       AVVideoHeightKey : @(dimensions.height),
-                       AVVideoCompressionPropertiesKey : compressionProperties };
-
-}
-
 - (void)appendSampleBuffer:(CMSampleBufferRef)sampleBuffer ofMediaType:(NSString *)mediaType {
     if(sampleBuffer == NULL){
         @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"NULL sample buffer" userInfo:nil];
@@ -311,7 +279,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     }
     
     CFRetain(sampleBuffer);
-    dispatch_async( self.writingQueue, ^{
+    dispatch_async(self.writingQueue, ^{
         @autoreleasepool {
             @synchronized(self) {
                 // From the client's perspective the movie recorder can asynchronously transition to an error state as the result of an append.
@@ -328,7 +296,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
                 self.haveStartedSession = YES;
             }
             
-            AVAssetWriterInput *input = ( mediaType == AVMediaTypeVideo ) ? self.videoInput : self.audioInput;
+            AVAssetWriterInput *input = (mediaType == AVMediaTypeVideo) ? self.videoInput : self.audioInput;
             
             if(input.readyForMoreMediaData){
                 BOOL success = [input appendSampleBuffer:sampleBuffer];
