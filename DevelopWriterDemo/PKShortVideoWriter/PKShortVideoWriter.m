@@ -67,17 +67,18 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 
 - (void)addVideoTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)videoSettings {
     if (formatDescription == NULL){
-        @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"NULL format description" userInfo:nil];
+        NSLog(@"formatDescription 不能为空");
         return;
     }
+    
     @synchronized(self) {
         if (self.status != PKWriterStatusIdle){
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add tracks while not idle" userInfo:nil];
+            NSLog(@"当状态不是限制时不能修改");
             return;
         }
         
         if (self.videoTrackSourceFormatDescription ){
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add more than one video track" userInfo:nil];
+            NSLog(@"videoTrackSourceFormatDescription 已经有值");
             return;
         }
         
@@ -87,19 +88,19 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 }
 
 - (void)addAudioTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)audioSettings {
-    if (formatDescription == NULL) {
-        @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"NULL format description" userInfo:nil];
+    if (formatDescription == NULL){
+        NSLog(@"formatDescription 不能为空");
         return;
     }
     
     @synchronized(self) {
         if (self.status != PKWriterStatusIdle) {
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add tracks while not idle" userInfo:nil];
+            NSLog(@"当状态不是限制时不能修改");
             return;
         }
         
         if (self.audioTrackSourceFormatDescription) {
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Cannot add more than one audio track" userInfo:nil];
+            NSLog(@"audioTrackSourceFormatDescription 已经有值");
             return;
         }
         
@@ -111,7 +112,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 - (void)prepareToRecord {
     @synchronized(self) {
         if (self.status != PKWriterStatusIdle){
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Already prepared, cannot prepare again" userInfo:nil];
+            NSLog(@"已经开始准备不需要再准备");
             return;
         }
         [self transitionToStatus:PKWriterStatusPreparingToRecord error:nil];
@@ -120,11 +121,10 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     dispatch_async( dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_LOW, 0 ), ^{
         @autoreleasepool {
             NSError *error = nil;
-            // AVAssetWriter will not write over an existing file.
             [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
             self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
             
-            // Create and add inputs
+            //创建和添加输入
             if (!error && self.videoTrackSourceFormatDescription) {
                 [self setupAssetWriterVideoInputWithSourceFormatDescription:self.videoTrackSourceFormatDescription transform:self.videoTrackTransform settings:self.videoTrackSettings error:&error];
             }
@@ -169,9 +169,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
                 @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Not recording" userInfo:nil];
                 break;
             case PKWriterStatusFailed:
-                // From the client's perspective the movie recorder can asynchronously transition to an error state as the result of an append.
-                // Because of this we are lenient when finishRecording is called and we are in an error state.
-                NSLog( @"Recording has failed, nothing to do" );
+                NSLog( @"记录失败" );
                 break;
             case PKWriterStatusRecording:
                 shouldFinishRecording = YES;
@@ -189,13 +187,10 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     dispatch_async( _writingQueue, ^{
         @autoreleasepool {
             @synchronized(self) {
-                // We may have transitioned to an error state as we appended inflight buffers. In that case there is nothing to do now.
                 if (self.status != PKWriterStatusFinishingRecordingPart1) {
                     return;
                 }
                 
-                // It is not safe to call -[AVAssetWriter finishWriting*] concurrently with -[AVAssetWriterInput appendSampleBuffer:]
-                // We transition to MovieRecorderStatusFinishingRecordingPart2 while on _writingQueue, which guarantees that no more buffers will be appended.
                 [self transitionToStatus:PKWriterStatusFinishingRecordingPart2 error:nil];
             }
             [self.assetWriter finishWritingWithCompletionHandler:^{
@@ -282,9 +277,6 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     dispatch_async(self.writingQueue, ^{
         @autoreleasepool {
             @synchronized(self) {
-                // From the client's perspective the movie recorder can asynchronously transition to an error state as the result of an append.
-                // Because of this we are lenient when samples are appended and we are no longer recording.
-                // Instead of throwing an exception we just release the sample buffers and return.
                 if (self.status > PKWriterStatusFinishingRecordingPart1){
                     CFRelease(sampleBuffer);
                     return;
@@ -307,7 +299,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
                     }
                 }
             } else {
-                NSLog( @"%@ input not ready for more media data, dropping buffer", mediaType );
+                NSLog( @"%@ 输入不能添加更多数据了抛弃 buffer", mediaType );
             }
             CFRelease(sampleBuffer);
         }
@@ -358,8 +350,8 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 }
 
 - (NSError *)cannotSetupInputError {
-    NSDictionary *errorDict = @{ NSLocalizedDescriptionKey : @"Recording cannot be started",
-                                 NSLocalizedFailureReasonErrorKey : @"Cannot setup asset writer input." };
+    NSDictionary *errorDict = @{ NSLocalizedDescriptionKey : @"记录不能开始",
+                                 NSLocalizedFailureReasonErrorKey : @"不能初始化writer" };
     return [NSError errorWithDomain:@"com.PKShortVideoWriter" code:0 userInfo:errorDict];
 }
 
