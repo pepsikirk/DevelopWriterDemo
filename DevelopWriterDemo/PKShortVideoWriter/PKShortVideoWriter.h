@@ -21,9 +21,10 @@
 - (void)addVideoTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)videoSettings;
 - (void)addAudioTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)audioSettings;
 
-- (void)prepareToRecord;
 - (void)appendVideoSampleBuffer:(CMSampleBufferRef)sampleBuffer;
 - (void)appendAudioSampleBuffer:(CMSampleBufferRef)sampleBuffer;
+
+- (void)prepareToRecord;
 - (void)finishRecording;
 
 @end

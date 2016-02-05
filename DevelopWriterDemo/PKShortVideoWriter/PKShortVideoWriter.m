@@ -166,7 +166,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
             case PKWriterStatusFinishingRecordingPart1:
             case PKWriterStatusFinishingRecordingPart2:
             case PKWriterStatusFinished:
-                @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Not recording" userInfo:nil];
+                NSLog(@"还没有开始记录");
                 break;
             case PKWriterStatusFailed:
                 NSLog( @"记录失败" );
