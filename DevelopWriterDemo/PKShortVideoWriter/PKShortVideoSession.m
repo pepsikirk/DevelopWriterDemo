@@ -8,19 +8,19 @@
 
 #import "PKShortVideoSession.h"
 
-typedef NS_ENUM(NSInteger, PKWriterStatus){
-    PKWriterStatusIdle = 0,
-    PKWriterStatusPreparingToRecord,
-    PKWriterStatusRecording,
-    PKWriterStatusFinishingRecordingPart1, // waiting for inflight buffers to be appended
-    PKWriterStatusFinishingRecordingPart2, // calling finish writing on the asset writer
-    PKWriterStatusFinished,
-    PKWriterStatusFailed
+typedef NS_ENUM(NSInteger, PKSessionStatus){
+    PKSessionStatusIdle = 0,
+    PKSessionStatusPreparingToRecord,
+    PKSessionStatusRecording,
+    PKSessionStatusFinishingRecordingPart1, // waiting for inflight buffers to be appended
+    PKSessionStatusFinishingRecordingPart2, // calling finish writing on the asset writer
+    PKSessionStatusFinished,
+    PKSessionStatusFailed
 };
 
 @interface PKShortVideoSession ()
 
-@property (nonatomic, assign) PKWriterStatus status;
+@property (nonatomic, assign) PKSessionStatus status;
 
 @property (nonatomic) dispatch_queue_t writingQueue;
 @property (nonatomic) dispatch_queue_t delegateCallbackQueue;
@@ -72,7 +72,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     }
     
     @synchronized(self) {
-        if (self.status != PKWriterStatusIdle){
+        if (self.status != PKSessionStatusIdle){
             NSLog(@"当状态不是限制时不能修改");
             return;
         }
@@ -94,7 +94,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     }
     
     @synchronized(self) {
-        if (self.status != PKWriterStatusIdle) {
+        if (self.status != PKSessionStatusIdle) {
             NSLog(@"当状态不是限制时不能修改");
             return;
         }
@@ -111,11 +111,11 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 
 - (void)prepareToRecord {
     @synchronized(self) {
-        if (self.status != PKWriterStatusIdle){
+        if (self.status != PKSessionStatusIdle){
             NSLog(@"已经开始准备不需要再准备");
             return;
         }
-        [self transitionToStatus:PKWriterStatusPreparingToRecord error:nil];
+        [self transitionToStatus:PKSessionStatusPreparingToRecord error:nil];
     }
     
     dispatch_async( dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_LOW, 0 ), ^{
@@ -140,9 +140,9 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
             
             @synchronized(self) {
                 if (error) {
-                    [self transitionToStatus:PKWriterStatusFailed error:error];
+                    [self transitionToStatus:PKSessionStatusFailed error:error];
                 } else {
-                    [self transitionToStatus:PKWriterStatusRecording error:nil];
+                    [self transitionToStatus:PKSessionStatusRecording error:nil];
                 }
             }
         }
@@ -161,23 +161,23 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     @synchronized(self) {
         BOOL shouldFinishRecording = NO;
         switch (self.status) {
-            case PKWriterStatusIdle:
-            case PKWriterStatusPreparingToRecord:
-            case PKWriterStatusFinishingRecordingPart1:
-            case PKWriterStatusFinishingRecordingPart2:
-            case PKWriterStatusFinished:
+            case PKSessionStatusIdle:
+            case PKSessionStatusPreparingToRecord:
+            case PKSessionStatusFinishingRecordingPart1:
+            case PKSessionStatusFinishingRecordingPart2:
+            case PKSessionStatusFinished:
                 NSLog(@"还没有开始记录");
                 break;
-            case PKWriterStatusFailed:
+            case PKSessionStatusFailed:
                 NSLog( @"记录失败" );
                 break;
-            case PKWriterStatusRecording:
+            case PKSessionStatusRecording:
                 shouldFinishRecording = YES;
                 break;
         }
         
         if (shouldFinishRecording){
-            [self transitionToStatus:PKWriterStatusFinishingRecordingPart1 error:nil];
+            [self transitionToStatus:PKSessionStatusFinishingRecordingPart1 error:nil];
         }
         else {
             return;
@@ -187,20 +187,20 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     dispatch_async( _writingQueue, ^{
         @autoreleasepool {
             @synchronized(self) {
-                if (self.status != PKWriterStatusFinishingRecordingPart1) {
+                if (self.status != PKSessionStatusFinishingRecordingPart1) {
                     return;
                 }
                 
-                [self transitionToStatus:PKWriterStatusFinishingRecordingPart2 error:nil];
+                [self transitionToStatus:PKSessionStatusFinishingRecordingPart2 error:nil];
             }
             [self.assetWriter finishWritingWithCompletionHandler:^{
                 @synchronized(self) {
                     NSError *error = self.assetWriter.error;
                     if(error){
-                        [self transitionToStatus:PKWriterStatusFailed error:error];
+                        [self transitionToStatus:PKSessionStatusFailed error:error];
                     }
                     else {
-                        [self transitionToStatus:PKWriterStatusFinished error:nil];
+                        [self transitionToStatus:PKSessionStatusFinished error:nil];
                     }
                 }
             }];
@@ -267,7 +267,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     }
     
     @synchronized(self){
-        if (self.status < PKWriterStatusRecording){
+        if (self.status < PKSessionStatusRecording){
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Not ready to record yet" userInfo:nil];
             return;
         }
@@ -277,7 +277,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     dispatch_async(self.writingQueue, ^{
         @autoreleasepool {
             @synchronized(self) {
-                if (self.status > PKWriterStatusFinishingRecordingPart1){
+                if (self.status > PKSessionStatusFinishingRecordingPart1){
                     CFRelease(sampleBuffer);
                     return;
                 }
@@ -295,7 +295,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
                 if (!success){
                     NSError *error = self.assetWriter.error;
                     @synchronized(self){
-                        [self transitionToStatus:PKWriterStatusFailed error:error];
+                        [self transitionToStatus:PKSessionStatusFailed error:error];
                     }
                 }
             } else {
@@ -306,22 +306,22 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     } );
 }
 
-- (void)transitionToStatus:(PKWriterStatus)newStatus error:(NSError *)error {
+- (void)transitionToStatus:(PKSessionStatus)newStatus error:(NSError *)error {
     BOOL shouldNotifyDelegate = NO;
     
     if (newStatus != self.status){
-        if ((newStatus == PKWriterStatusFinished) || (newStatus == PKWriterStatusFailed)){
+        if ((newStatus == PKSessionStatusFinished) || (newStatus == PKSessionStatusFailed)){
             shouldNotifyDelegate = YES;
             
             dispatch_async(self.writingQueue, ^{
                 self.assetWriter = nil;
                 self.videoInput = nil;
                 self.audioInput = nil;
-                if (newStatus == PKWriterStatusFailed) {//失败删除
+                if (newStatus == PKSessionStatusFailed) {//失败删除
                     [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
                 }
             } );
-        } else if (newStatus == PKWriterStatusRecording){
+        } else if (newStatus == PKSessionStatusRecording){
             shouldNotifyDelegate = YES;
         }
         self.status = newStatus;
@@ -332,13 +332,13 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
             
             @autoreleasepool {
                 switch(newStatus){
-                    case PKWriterStatusRecording:
+                    case PKSessionStatusRecording:
                         [self.delegate sessionDidFinishPreparing:self];
                         break;
-                    case PKWriterStatusFinished:
+                    case PKSessionStatusFinished:
                         [self.delegate sessionDidFinishRecording:self];
                         break;
-                    case PKWriterStatusFailed:
+                    case PKSessionStatusFailed:
                         [self.delegate session:self didFailWithError:error];
                         break;
                     default:
@@ -353,6 +353,17 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     NSDictionary *errorDict = @{ NSLocalizedDescriptionKey : @"记录不能开始",
                                  NSLocalizedFailureReasonErrorKey : @"不能初始化writer" };
     return [NSError errorWithDomain:@"com.PKShortVideoWriter" code:0 userInfo:errorDict];
+}
+
+
+#pragma mark - Getter 
+
+- (BOOL)videoInitialized {
+    return _videoInput != nil;
+}
+
+- (BOOL)audioInitialized {
+    return _audioInput != nil;
 }
 
 @end

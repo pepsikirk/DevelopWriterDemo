@@ -8,7 +8,6 @@
 
 #import "PKShortVideoRecorder.h"
 #import <AVFoundation/AVFoundation.h>
-#import <MobileCoreServices/MobileCoreServices.h>
 #import "PKShortVideoSession.h"
 
 typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
@@ -41,12 +40,9 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 @property (nonatomic, strong) NSDictionary *videoCompressionSettings;
 @property (nonatomic, strong) NSDictionary *audioCompressionSettings;
 
-@property (nonatomic)  CMFormatDescriptionRef outputVideoFormatDescription;
-@property (nonatomic)  CMFormatDescriptionRef outputAudioFormatDescription;
-
 @property (nonatomic, assign) PKRecordingStatus recordingStatus;
 
-@property (nonatomic, retain) PKShortVideoSession *assetWriter;
+@property (nonatomic, retain) PKShortVideoSession *assetSession;
 
 @end
 
@@ -102,13 +98,9 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         [self transitionToRecordingStatus:PKRecordingStatusStartingRecording error:nil];
     }
     
-    self.assetWriter = [[PKShortVideoSession alloc] initWithOutputFileURL:self.outputFileURL];
-    if(self.outputAudioFormatDescription != nil){
-        [self.assetWriter addAudioTrackWithSourceFormatDescription:self.outputAudioFormatDescription settings:self.audioCompressionSettings];
-    }
-    [self.assetWriter addVideoTrackWithSourceFormatDescription:self.outputVideoFormatDescription settings:self.videoCompressionSettings];
-    self.assetWriter.delegate = self;
-    [self.assetWriter prepareToRecord];
+    self.assetSession = [[PKShortVideoSession alloc] initWithOutputFileURL:self.outputFileURL];
+    self.assetSession.delegate = self;
+    [self.assetSession prepareToRecord];
 }
 
 - (void)stopRecording {
@@ -118,7 +110,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         }
         [self transitionToRecordingStatus:PKRecordingStatusStoppingRecording error:nil];
     }
-    [self.assetWriter finishRecording];
+    [self.assetSession finishRecording];
 }
 
 
@@ -193,9 +185,9 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     
     // 音频设置
     self.audioCompressionSettings = @{ AVEncoderBitRatePerChannelKey : @(28000),
-                                   AVFormatIDKey : @(kAudioFormatMPEG4AAC),
-                                   AVNumberOfChannelsKey : @(1),
-                                   AVSampleRateKey : @(22050) };
+                                                       AVFormatIDKey : @(kAudioFormatMPEG4AAC),
+                                               AVNumberOfChannelsKey : @(1),
+                                                     AVSampleRateKey : @(22050) };
 }
 
 #pragma mark - SampleBufferDelegate methods
@@ -204,22 +196,28 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
     
     if (connection == self.videoConnection){
-        if (self.outputVideoFormatDescription == nil) {
-            //不渲染首帧
-            self.outputVideoFormatDescription = formatDescription;
+        if (!self.assetSession.videoInitialized) {
+            @synchronized(self) {
+                CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
+                [self.assetSession addVideoTrackWithSourceFormatDescription:formatDescription settings:self.videoCompressionSettings];
+            }
         } else {
-            self.outputVideoFormatDescription = formatDescription;
             @synchronized(self) {
                 if(self.recordingStatus == PKRecordingStatusRecording){
-                    [self.assetWriter appendVideoSampleBuffer:sampleBuffer];
+                    [self.assetSession appendVideoSampleBuffer:sampleBuffer];
                 }
             }
         }
     } else if ( connection == self.audioConnection ){
-        self.outputAudioFormatDescription = formatDescription;
+        if (!self.assetSession.audioInitialized) {
+            @synchronized(self) {
+                CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
+                [self.assetSession addAudioTrackWithSourceFormatDescription:formatDescription settings:self.audioCompressionSettings];
+            }
+        }
         @synchronized(self) {
             if(self.recordingStatus == PKRecordingStatusRecording){
-                [self.assetWriter appendAudioSampleBuffer:sampleBuffer];
+                [self.assetSession appendAudioSampleBuffer:sampleBuffer];
             }
         }
     }
@@ -238,7 +236,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 - (void)session:(PKShortVideoRecorder *)writer didFailWithError:(NSError *)error {
     @synchronized( self ) {
-        self.assetWriter = nil;
+        self.assetSession = nil;
         [self transitionToRecordingStatus:PKRecordingStatusIdle error:error];
     }
 }
@@ -249,7 +247,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
             return;
         }
     }
-    self.assetWriter = nil;
+    self.assetSession = nil;
     
     @synchronized( self ) {
         [self transitionToRecordingStatus:PKRecordingStatusIdle error:nil];

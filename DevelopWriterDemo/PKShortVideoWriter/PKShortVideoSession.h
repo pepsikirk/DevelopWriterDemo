@@ -14,6 +14,9 @@
 
 @interface PKShortVideoSession : NSObject
 
+@property (nonatomic, readonly) BOOL videoInitialized;
+@property (nonatomic, readonly) BOOL audioInitialized;
+
 @property (nonatomic, weak) id<PKShortVideoSessionDelegate> delegate;
 
 - (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL;
