@@ -6,7 +6,7 @@
 //  Copyright © 2016年 pepsikirk. All rights reserved.
 //
 
-#import "PKShortVideoWriter.h"
+#import "PKShortVideoSession.h"
 
 typedef NS_ENUM(NSInteger, PKWriterStatus){
     PKWriterStatusIdle = 0,
@@ -18,7 +18,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
     PKWriterStatusFailed
 };
 
-@interface PKShortVideoWriter ()
+@interface PKShortVideoSession ()
 
 @property (nonatomic, assign) PKWriterStatus status;
 
@@ -43,7 +43,7 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
 
 @end
 
-@implementation PKShortVideoWriter
+@implementation PKShortVideoSession
 
 
 - (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL {
@@ -333,13 +333,13 @@ typedef NS_ENUM(NSInteger, PKWriterStatus){
             @autoreleasepool {
                 switch(newStatus){
                     case PKWriterStatusRecording:
-                        [self.delegate writerDidFinishPreparing:self];
+                        [self.delegate sessionDidFinishPreparing:self];
                         break;
                     case PKWriterStatusFinished:
-                        [self.delegate writerDidFinishRecording:self];
+                        [self.delegate sessionDidFinishRecording:self];
                         break;
                     case PKWriterStatusFailed:
-                        [self.delegate writer:self didFailWithError:error];
+                        [self.delegate session:self didFailWithError:error];
                         break;
                     default:
                         break;

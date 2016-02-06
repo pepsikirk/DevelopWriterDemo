@@ -9,14 +9,14 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
-@class PKShortVideoCaptureSession;
+@class PKShortVideoRecorder;
 
-@protocol PKShortVideoCaptureSessionDelegate <NSObject>
+@protocol PKShortVideoRecorderDelegate <NSObject>
 
 @required
 
-- (void)sessionDidBeginRecording:(PKShortVideoCaptureSession *)session;
-- (void)session:(PKShortVideoCaptureSession *)session didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error;
+- (void)recorderDidBeginRecording:(PKShortVideoRecorder *)recorder;
+- (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error;
 
 @end
 
@@ -24,9 +24,9 @@
 
 @class AVCaptureVideoPreviewLayer;
 
-@interface PKShortVideoCaptureSession : NSObject
+@interface PKShortVideoRecorder : NSObject
 
-@property (nonatomic, weak) id<PKShortVideoCaptureSessionDelegate> delegate;
+@property (nonatomic, weak) id<PKShortVideoRecorderDelegate> delegate;
 
 - (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL outputSize:(CGSize)outputSize;
 

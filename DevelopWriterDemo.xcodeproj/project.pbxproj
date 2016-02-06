@@ -8,8 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		881096DF1C47A01900A99726 /* PKShortVideoViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 881096DE1C47A01900A99726 /* PKShortVideoViewController.m */; };
-		881096E21C47A86B00A99726 /* PKShortVideoCaptureSession.m in Sources */ = {isa = PBXBuildFile; fileRef = 881096E11C47A86B00A99726 /* PKShortVideoCaptureSession.m */; };
-		881828C11C4CCAF900E9C51B /* PKShortVideoWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 881828C01C4CCAF900E9C51B /* PKShortVideoWriter.m */; };
+		881096E21C47A86B00A99726 /* PKShortVideoRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = 881096E11C47A86B00A99726 /* PKShortVideoRecorder.m */; };
+		881828C11C4CCAF900E9C51B /* PKShortVideoSession.m in Sources */ = {isa = PBXBuildFile; fileRef = 881828C01C4CCAF900E9C51B /* PKShortVideoSession.m */; };
 		881828C71C4E49EA00E9C51B /* PKFullScreenPlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = 881828C41C4E49EA00E9C51B /* PKFullScreenPlayerView.m */; };
 		881828C81C4E49EA00E9C51B /* PKFullScreenPlayerViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 881828C61C4E49EA00E9C51B /* PKFullScreenPlayerViewController.m */; };
 		88297F8E1C4CE8E30059A7B1 /* PKUtiltiies.m in Sources */ = {isa = PBXBuildFile; fileRef = 88297F8D1C4CE8E30059A7B1 /* PKUtiltiies.m */; };
@@ -44,10 +44,10 @@
 /* Begin PBXFileReference section */
 		881096DD1C47A01900A99726 /* PKShortVideoViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKShortVideoViewController.h; path = PKShortVideoWriter/PKShortVideoViewController.h; sourceTree = "<group>"; };
 		881096DE1C47A01900A99726 /* PKShortVideoViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKShortVideoViewController.m; path = PKShortVideoWriter/PKShortVideoViewController.m; sourceTree = "<group>"; };
-		881096E01C47A86B00A99726 /* PKShortVideoCaptureSession.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKShortVideoCaptureSession.h; path = PKShortVideoWriter/PKShortVideoCaptureSession.h; sourceTree = "<group>"; };
-		881096E11C47A86B00A99726 /* PKShortVideoCaptureSession.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKShortVideoCaptureSession.m; path = PKShortVideoWriter/PKShortVideoCaptureSession.m; sourceTree = "<group>"; };
-		881828BF1C4CCAF900E9C51B /* PKShortVideoWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKShortVideoWriter.h; path = PKShortVideoWriter/PKShortVideoWriter.h; sourceTree = "<group>"; };
-		881828C01C4CCAF900E9C51B /* PKShortVideoWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKShortVideoWriter.m; path = PKShortVideoWriter/PKShortVideoWriter.m; sourceTree = "<group>"; };
+		881096E01C47A86B00A99726 /* PKShortVideoRecorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKShortVideoRecorder.h; path = PKShortVideoWriter/PKShortVideoRecorder.h; sourceTree = "<group>"; };
+		881096E11C47A86B00A99726 /* PKShortVideoRecorder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKShortVideoRecorder.m; path = PKShortVideoWriter/PKShortVideoRecorder.m; sourceTree = "<group>"; };
+		881828BF1C4CCAF900E9C51B /* PKShortVideoSession.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PKShortVideoSession.h; path = PKShortVideoWriter/PKShortVideoSession.h; sourceTree = "<group>"; };
+		881828C01C4CCAF900E9C51B /* PKShortVideoSession.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PKShortVideoSession.m; path = PKShortVideoWriter/PKShortVideoSession.m; sourceTree = "<group>"; };
 		881828C31C4E49EA00E9C51B /* PKFullScreenPlayerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PKFullScreenPlayerView.h; sourceTree = "<group>"; };
 		881828C41C4E49EA00E9C51B /* PKFullScreenPlayerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PKFullScreenPlayerView.m; sourceTree = "<group>"; };
 		881828C51C4E49EA00E9C51B /* PKFullScreenPlayerViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PKFullScreenPlayerViewController.h; sourceTree = "<group>"; };
@@ -105,10 +105,10 @@
 				881828C21C4E49EA00E9C51B /* AVPlayer */,
 				881096DD1C47A01900A99726 /* PKShortVideoViewController.h */,
 				881096DE1C47A01900A99726 /* PKShortVideoViewController.m */,
-				881096E01C47A86B00A99726 /* PKShortVideoCaptureSession.h */,
-				881096E11C47A86B00A99726 /* PKShortVideoCaptureSession.m */,
-				881828BF1C4CCAF900E9C51B /* PKShortVideoWriter.h */,
-				881828C01C4CCAF900E9C51B /* PKShortVideoWriter.m */,
+				881096E01C47A86B00A99726 /* PKShortVideoRecorder.h */,
+				881096E11C47A86B00A99726 /* PKShortVideoRecorder.m */,
+				881828BF1C4CCAF900E9C51B /* PKShortVideoSession.h */,
+				881828C01C4CCAF900E9C51B /* PKShortVideoSession.m */,
 				88382D381C48C73E00AB8709 /* PKShortVideoProgressBar.h */,
 				88382D391C48C73E00AB8709 /* PKShortVideoProgressBar.m */,
 				88297F8C1C4CE8E30059A7B1 /* PKUtiltiies.h */,
@@ -326,12 +326,12 @@
 				881828C81C4E49EA00E9C51B /* PKFullScreenPlayerViewController.m in Sources */,
 				88AA24B11C465AF0001B629F /* ViewController.m in Sources */,
 				88AA24AE1C465AF0001B629F /* AppDelegate.m in Sources */,
-				881828C11C4CCAF900E9C51B /* PKShortVideoWriter.m in Sources */,
+				881828C11C4CCAF900E9C51B /* PKShortVideoSession.m in Sources */,
 				88AA24AB1C465AF0001B629F /* main.m in Sources */,
 				881828C71C4E49EA00E9C51B /* PKFullScreenPlayerView.m in Sources */,
 				88382D3A1C48C73E00AB8709 /* PKShortVideoProgressBar.m in Sources */,
 				88297F8E1C4CE8E30059A7B1 /* PKUtiltiies.m in Sources */,
-				881096E21C47A86B00A99726 /* PKShortVideoCaptureSession.m in Sources */,
+				881096E21C47A86B00A99726 /* PKShortVideoRecorder.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

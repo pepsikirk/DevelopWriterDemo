@@ -10,11 +10,11 @@
 #import <CoreMedia/CoreMedia.h>
 #import <AVFoundation/AVFoundation.h>
 
-@protocol PKShortVideoWriterDelegate;
+@protocol PKShortVideoSessionDelegate;
 
-@interface PKShortVideoWriter : NSObject
+@interface PKShortVideoSession : NSObject
 
-@property (nonatomic, weak) id<PKShortVideoWriterDelegate> delegate;
+@property (nonatomic, weak) id<PKShortVideoSessionDelegate> delegate;
 
 - (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL;
 
@@ -30,10 +30,10 @@
 @end
 
 
-@protocol PKShortVideoWriterDelegate <NSObject>
+@protocol PKShortVideoSessionDelegate <NSObject>
 
-- (void)writerDidFinishPreparing:(PKShortVideoWriter *)writer;
-- (void)writer:(PKShortVideoWriter *)writer didFailWithError:(NSError *)error;
-- (void)writerDidFinishRecording:(PKShortVideoWriter *)writer;
+- (void)sessionDidFinishPreparing:(PKShortVideoSession *)session;
+- (void)session:(PKShortVideoSession *)session didFailWithError:(NSError *)error;
+- (void)sessionDidFinishRecording:(PKShortVideoSession *)session;
 
 @end

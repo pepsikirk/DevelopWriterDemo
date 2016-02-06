@@ -6,10 +6,10 @@
 //  Copyright © 2016年 pepsikirk. All rights reserved.
 //
 
-#import "PKShortVideoCaptureSession.h"
+#import "PKShortVideoRecorder.h"
 #import <AVFoundation/AVFoundation.h>
 #import <MobileCoreServices/MobileCoreServices.h>
-#import "PKShortVideoWriter.h"
+#import "PKShortVideoSession.h"
 
 typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     PKRecordingStatusIdle = 0,
@@ -18,12 +18,12 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     PKRecordingStatusStoppingRecording,
 }; 
 
-@interface PKShortVideoCaptureSession() <AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate, PKShortVideoWriterDelegate>
+@interface PKShortVideoRecorder() <AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate, PKShortVideoSessionDelegate>
 
 @property (nonatomic, strong) NSURL *outputFileURL;
 @property (nonatomic, assign) CGSize outputSize;
 
-@property (nonatomic, strong) dispatch_queue_t sessionQueue;
+@property (nonatomic, strong) dispatch_queue_t recorderQueue;
 
 @property (nonatomic, strong) dispatch_queue_t videoDataOutputQueue;
 @property (nonatomic, strong) dispatch_queue_t audioDataOutputQueue;
@@ -40,16 +40,17 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 @property (nonatomic, strong) NSDictionary *videoCompressionSettings;
 @property (nonatomic, strong) NSDictionary *audioCompressionSettings;
-@property(nonatomic, retain) __attribute__((NSObject)) CMFormatDescriptionRef outputVideoFormatDescription;
-@property(nonatomic, retain) __attribute__((NSObject)) CMFormatDescriptionRef outputAudioFormatDescription;
+
+@property (nonatomic)  CMFormatDescriptionRef outputVideoFormatDescription;
+@property (nonatomic)  CMFormatDescriptionRef outputAudioFormatDescription;
 
 @property (nonatomic, assign) PKRecordingStatus recordingStatus;
 
-@property(nonatomic, retain) PKShortVideoWriter *assetWriter;
+@property (nonatomic, retain) PKShortVideoSession *assetWriter;
 
 @end
 
-@implementation PKShortVideoCaptureSession
+@implementation PKShortVideoRecorder
 
 #pragma mark - Init
 
@@ -59,7 +60,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         _outputFileURL = outputFileURL;
         _outputSize = outputSize;
         
-        _sessionQueue = dispatch_queue_create( "com.PKShortVideoWriter.sessionQueue", DISPATCH_QUEUE_SERIAL );
+        _recorderQueue = dispatch_queue_create( "com.PKShortVideoWriter.sessionQueue", DISPATCH_QUEUE_SERIAL );
         
         _audioDataOutputQueue = dispatch_queue_create( "com.PKShortVideoWriter.audioOutput", DISPATCH_QUEUE_SERIAL );
 
@@ -77,13 +78,13 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 #pragma mark - Running Session
 
 - (void)startRunning {
-    dispatch_sync( self.sessionQueue, ^{
+    dispatch_sync( self.recorderQueue, ^{
         [self.captureSession startRunning];
     } );
 }
 
 - (void)stopRunning {
-    dispatch_sync( self.sessionQueue, ^{
+    dispatch_sync( self.recorderQueue, ^{
         [self stopRecording];
         [self.captureSession stopRunning];
     } );
@@ -101,7 +102,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         [self transitionToRecordingStatus:PKRecordingStatusStartingRecording error:nil];
     }
     
-    self.assetWriter = [[PKShortVideoWriter alloc] initWithOutputFileURL:self.outputFileURL];
+    self.assetWriter = [[PKShortVideoSession alloc] initWithOutputFileURL:self.outputFileURL];
     if(self.outputAudioFormatDescription != nil){
         [self.assetWriter addAudioTrackWithSourceFormatDescription:self.outputAudioFormatDescription settings:self.audioCompressionSettings];
     }
@@ -216,7 +217,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         }
     } else if ( connection == self.audioConnection ){
         self.outputAudioFormatDescription = formatDescription;
-        @synchronized( self ) {
+        @synchronized(self) {
             if(self.recordingStatus == PKRecordingStatusRecording){
                 [self.assetWriter appendAudioSampleBuffer:sampleBuffer];
             }
@@ -226,7 +227,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 #pragma mark - PKAssetWriterDelegate methods
 
-- (void)writerDidFinishPreparing:(PKShortVideoCaptureSession *)writer {
+- (void)sessionDidFinishPreparing:(PKShortVideoRecorder *)writer {
     @synchronized(self) {
         if(self.recordingStatus != PKRecordingStatusStartingRecording){
             return;
@@ -235,14 +236,14 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     }
 }
 
-- (void)writer:(PKShortVideoCaptureSession *)writer didFailWithError:(NSError *)error {
+- (void)session:(PKShortVideoRecorder *)writer didFailWithError:(NSError *)error {
     @synchronized( self ) {
         self.assetWriter = nil;
         [self transitionToRecordingStatus:PKRecordingStatusIdle error:error];
     }
 }
 
-- (void)writerDidFinishRecording:(PKShortVideoCaptureSession *)writer {
+- (void)sessionDidFinishRecording:(PKShortVideoRecorder *)writer {
     @synchronized( self ) {
         if ( self.recordingStatus != PKRecordingStatusStoppingRecording ) {
             return;
@@ -266,7 +267,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         if (error && (newStatus == PKRecordingStatusIdle)){
             dispatch_async( dispatch_get_main_queue(), ^{
                 @autoreleasepool {
-                    [self.delegate session:self didFinishRecordingToOutputFileURL:self.outputFileURL error:error];
+                    [self.delegate recorder:self didFinishRecordingToOutputFileURL:self.outputFileURL error:error];
                 }
             });
         } else {
@@ -274,13 +275,13 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
             if (oldStatus == PKRecordingStatusStartingRecording && newStatus == PKRecordingStatusRecording){
                 dispatch_async( dispatch_get_main_queue(), ^{
                     @autoreleasepool {
-                        [self.delegate sessionDidBeginRecording:self];
+                        [self.delegate recorderDidBeginRecording:self];
                     }
                 });
             } else if (oldStatus == PKRecordingStatusStoppingRecording && newStatus == PKRecordingStatusIdle) {
                 dispatch_async( dispatch_get_main_queue(), ^{
                     @autoreleasepool {
-                        [self.delegate session:self didFinishRecordingToOutputFileURL:self.outputFileURL error:nil];
+                        [self.delegate recorder:self didFinishRecordingToOutputFileURL:self.outputFileURL error:nil];
                     }
                 });
             }
