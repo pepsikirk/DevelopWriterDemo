@@ -66,47 +66,31 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
 #pragma mark - Public
 
 - (void)addVideoTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)videoSettings {
-    if (formatDescription == NULL){
-        NSLog(@"formatDescription 不能为空");
-        return;
-    }
-    
     @synchronized(self) {
-        if (self.status != PKSessionStatusIdle){
-            NSLog(@"当状态不是限制时不能修改");
-            return;
-        }
-        
-        if (self.videoTrackSourceFormatDescription ){
-            NSLog(@"videoTrackSourceFormatDescription 已经有值");
-            return;
-        }
-        
-        self.videoTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain( formatDescription );
+        self.videoTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain(formatDescription);
         self.videoTrackSettings = [videoSettings copy];
+        
+        NSError *error = nil;
+        [self setupAssetWriterVideoInputWithSourceFormatDescription:self.videoTrackSourceFormatDescription transform:self.videoTrackTransform settings:self.videoTrackSettings error:&error];
     }
 }
 
 - (void)addAudioTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)audioSettings {
-    if (formatDescription == NULL){
-        NSLog(@"formatDescription 不能为空");
-        return;
-    }
-    
     @synchronized(self) {
-        if (self.status != PKSessionStatusIdle) {
-            NSLog(@"当状态不是限制时不能修改");
-            return;
-        }
-        
-        if (self.audioTrackSourceFormatDescription) {
-            NSLog(@"audioTrackSourceFormatDescription 已经有值");
-            return;
-        }
-        
         self.audioTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain(formatDescription);
         self.audioTrackSettings = [audioSettings copy];
+        
+        NSError *error = nil;
+        [self setupAssetWriterAudioInputWithSourceFormatDescription:self.audioTrackSourceFormatDescription settings:self.audioTrackSettings error:&error];
     }
+}
+
+- (void)appendVideoSampleBuffer:(CMSampleBufferRef)sampleBuffer {
+    [self appendSampleBuffer:sampleBuffer ofMediaType:AVMediaTypeVideo];
+}
+
+- (void)appendAudioSampleBuffer:(CMSampleBufferRef)sampleBuffer {
+    [self appendSampleBuffer:sampleBuffer ofMediaType:AVMediaTypeAudio];
 }
 
 - (void)prepareToRecord {
@@ -125,12 +109,6 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
             self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
             
             //创建和添加输入
-            if (!error && self.videoTrackSourceFormatDescription) {
-                [self setupAssetWriterVideoInputWithSourceFormatDescription:self.videoTrackSourceFormatDescription transform:self.videoTrackTransform settings:self.videoTrackSettings error:&error];
-            }
-            if(!error && _audioTrackSourceFormatDescription) {
-                [self setupAssetWriterAudioInputWithSourceFormatDescription:self.audioTrackSourceFormatDescription settings:self.audioTrackSettings error:&error];
-            }
             if(!error) {
                 BOOL success = [self.assetWriter startWriting];
                 if (!success) {
@@ -147,14 +125,6 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
             }
         }
     } );
-}
-
-- (void)appendVideoSampleBuffer:(CMSampleBufferRef)sampleBuffer {
-    [self appendSampleBuffer:sampleBuffer ofMediaType:AVMediaTypeVideo];
-}
-
-- (void)appendAudioSampleBuffer:(CMSampleBufferRef)sampleBuffer {
-    [self appendSampleBuffer:sampleBuffer ofMediaType:AVMediaTypeAudio];
 }
 
 - (void)finishRecording {

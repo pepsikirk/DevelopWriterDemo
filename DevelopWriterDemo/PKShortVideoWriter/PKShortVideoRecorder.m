@@ -193,8 +193,9 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 #pragma mark - SampleBufferDelegate methods
 
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
-    CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
-    
+    if (self.recordingStatus != PKRecordingStatusRecording) {
+        return;
+    }
     if (connection == self.videoConnection){
         if (!self.assetSession.videoInitialized) {
             @synchronized(self) {
