@@ -232,7 +232,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
 
 - (void)appendSampleBuffer:(CMSampleBufferRef)sampleBuffer ofMediaType:(NSString *)mediaType {
     if(sampleBuffer == NULL){
-        @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"NULL sample buffer" userInfo:nil];
+        @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"不存在sampleBuffer" userInfo:nil];
         return;
     }
     
