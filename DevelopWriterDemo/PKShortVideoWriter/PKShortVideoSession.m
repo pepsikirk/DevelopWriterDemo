@@ -238,7 +238,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     
     @synchronized(self){
         if (self.status < PKSessionStatusRecording){
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Not ready to record yet" userInfo:nil];
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"还没准备好记录" userInfo:nil];
             return;
         }
     }
