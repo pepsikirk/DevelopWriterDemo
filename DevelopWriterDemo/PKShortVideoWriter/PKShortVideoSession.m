@@ -269,7 +269,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
                     }
                 }
             } else {
-                NSLog( @"%@ 输入不能添加更多数据了抛弃 buffer", mediaType );
+                NSLog( @"%@ 输入不能添加更多数据了，抛弃 buffer", mediaType );
             }
             CFRelease(sampleBuffer);
         }
