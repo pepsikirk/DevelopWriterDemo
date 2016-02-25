@@ -136,7 +136,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
             case PKSessionStatusFinishingRecordingPart1:
             case PKSessionStatusFinishingRecordingPart2:
             case PKSessionStatusFinished:
-                NSLog(@"还没有开始记录");
+                @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"还没有开始记录" userInfo:nil];
                 break;
             case PKSessionStatusFailed:
                 NSLog( @"记录失败" );
