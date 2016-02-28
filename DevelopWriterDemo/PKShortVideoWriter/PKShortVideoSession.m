@@ -96,7 +96,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
 - (void)prepareToRecord {
     @synchronized(self) {
         if (self.status != PKSessionStatusIdle){
-            NSLog(@"已经开始准备不需要再准备");
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"已经开始准备不需要再准备" userInfo:nil];
             return;
         }
         [self transitionToStatus:PKSessionStatusPreparingToRecord error:nil];
