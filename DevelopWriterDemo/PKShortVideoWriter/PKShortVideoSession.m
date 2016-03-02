@@ -69,9 +69,6 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     @synchronized(self) {
         self.videoTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain(formatDescription);
         self.videoTrackSettings = [videoSettings copy];
-        
-        NSError *error = nil;
-        [self setupAssetWriterVideoInputWithSourceFormatDescription:self.videoTrackSourceFormatDescription transform:self.videoTrackTransform settings:self.videoTrackSettings error:&error];
     }
 }
 
@@ -79,9 +76,6 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     @synchronized(self) {
         self.audioTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain(formatDescription);
         self.audioTrackSettings = [audioSettings copy];
-        
-        NSError *error = nil;
-        [self setupAssetWriterAudioInputWithSourceFormatDescription:self.audioTrackSourceFormatDescription settings:self.audioTrackSettings error:&error];
     }
 }
 
@@ -104,9 +98,18 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     
     dispatch_async( dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_LOW, 0 ), ^{
         @autoreleasepool {
+            
             NSError *error = nil;
             [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
             self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
+            
+            // Create and add inputs
+            if (!error && _videoTrackSourceFormatDescription) {
+                [self setupAssetWriterVideoInputWithSourceFormatDescription:_videoTrackSourceFormatDescription transform:_videoTrackTransform settings:_videoTrackSettings error:&error];
+            }
+            if(!error && _audioTrackSourceFormatDescription) {
+                [self setupAssetWriterAudioInputWithSourceFormatDescription:_audioTrackSourceFormatDescription settings:_audioTrackSettings error:&error];
+            }
             
             //创建和添加输入
             if(!error) {
