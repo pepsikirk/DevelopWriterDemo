@@ -69,6 +69,9 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     @synchronized(self) {
         self.videoTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain(formatDescription);
         self.videoTrackSettings = [videoSettings copy];
+        
+        NSError *error = nil;
+        [self setupAssetWriterVideoInputWithSourceFormatDescription:self.videoTrackSourceFormatDescription transform:self.videoTrackTransform settings:self.videoTrackSettings error:&error];
     }
 }
 
@@ -76,6 +79,9 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     @synchronized(self) {
         self.audioTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain(formatDescription);
         self.audioTrackSettings = [audioSettings copy];
+        
+        NSError *error = nil;
+        [self setupAssetWriterAudioInputWithSourceFormatDescription:self.audioTrackSourceFormatDescription settings:self.audioTrackSettings error:&error];
     }
 }
 
@@ -102,14 +108,6 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
             NSError *error = nil;
             [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
             self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
-            
-            // Create and add inputs
-            if (!error && _videoTrackSourceFormatDescription) {
-                [self setupAssetWriterVideoInputWithSourceFormatDescription:_videoTrackSourceFormatDescription transform:_videoTrackTransform settings:_videoTrackSettings error:&error];
-            }
-            if(!error && _audioTrackSourceFormatDescription) {
-                [self setupAssetWriterAudioInputWithSourceFormatDescription:_audioTrackSourceFormatDescription settings:_audioTrackSettings error:&error];
-            }
             
             //创建和添加输入
             if(!error) {
@@ -185,8 +183,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
 #pragma mark - Private methods
 
 - (BOOL)setupAssetWriterAudioInputWithSourceFormatDescription:(CMFormatDescriptionRef)audioFormatDescription settings:(NSDictionary *)audioSettings error:(NSError **)errorOut {
-    
-    if ( [self.assetWriter canApplyOutputSettings:audioSettings forMediaType:AVMediaTypeAudio] ){
+    if ([self.assetWriter canApplyOutputSettings:audioSettings forMediaType:AVMediaTypeAudio]){
         self.audioInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio outputSettings:audioSettings sourceFormatHint:audioFormatDescription];
         self.audioInput.expectsMediaDataInRealTime = YES;
         
@@ -219,13 +216,13 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
         if ([self.assetWriter canAddInput:self.videoInput]){
             [self.assetWriter addInput:self.videoInput];
         } else {
-            if ( errorOut ) {
+            if (errorOut) {
                 *errorOut = [self cannotSetupInputError];
             }
             return NO;
         }
     } else {
-        if ( errorOut ) {
+        if (errorOut) {
             *errorOut = [self cannotSetupInputError];
         }
         return NO;
