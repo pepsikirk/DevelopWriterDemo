@@ -58,6 +58,10 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
         
         _videoTrackTransform = CGAffineTransformMakeRotation(M_PI_2);//人像方向
         _outputFileURL = outputFileURL;
+        
+        NSError *error = nil;
+        [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:&error];
+        self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
     }
     return self;
 }
@@ -101,31 +105,23 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
         }
         [self transitionToStatus:PKSessionStatusPreparingToRecord error:nil];
     }
-    
-    dispatch_async( dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_LOW, 0 ), ^{
-        @autoreleasepool {
             
-            NSError *error = nil;
-            [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
-            self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
-            
-            //创建和添加输入
-            if(!error) {
-                BOOL success = [self.assetWriter startWriting];
-                if (!success) {
-                    error = self.assetWriter.error;
-                }
-            }
-            
-            @synchronized(self) {
-                if (error) {
-                    [self transitionToStatus:PKSessionStatusFailed error:error];
-                } else {
-                    [self transitionToStatus:PKSessionStatusRecording error:nil];
-                }
-            }
+    NSError *error = nil;
+    //开始
+    if(!error) {
+        BOOL success = [self.assetWriter startWriting];
+        if (!success) {
+            error = self.assetWriter.error;
         }
-    } );
+    }
+    
+    @synchronized(self) {
+        if (error) {
+            [self transitionToStatus:PKSessionStatusFailed error:error];
+        } else {
+            [self transitionToStatus:PKSessionStatusRecording error:nil];
+        }
+    }
 }
 
 - (void)finishRecording {
@@ -207,7 +203,6 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
 }
 
 - (BOOL)setupAssetWriterVideoInputWithSourceFormatDescription:(CMFormatDescriptionRef)videoFormatDescription transform:(CGAffineTransform)transform settings:(NSDictionary *)videoSettings error:(NSError **)errorOut {
-    
     if ([self.assetWriter canApplyOutputSettings:videoSettings forMediaType:AVMediaTypeVideo]){
         self.videoInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeVideo outputSettings:videoSettings sourceFormatHint:videoFormatDescription];
         self.videoInput.expectsMediaDataInRealTime = YES;
