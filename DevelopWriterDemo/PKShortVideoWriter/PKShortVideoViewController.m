@@ -19,7 +19,7 @@ static CGFloat PKPreviewLayerHeight = 0;
 
 static CGFloat const PKRecordButtonWidth = 90;
 
-@interface PKShortVideoViewController()
+@interface PKShortVideoViewController() <PKShortVideoRecorderDelegate>
 
 @property (nonatomic, strong) NSURL *outputFileURL;
 @property (nonatomic, assign) CGSize outputSize;
@@ -85,6 +85,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mp4"]];
     
     self.recorder = [[PKShortVideoRecorder alloc] initWithOutputFileURL:[NSURL fileURLWithPath:outputFilePath] outputSize:CGSizeMake(320, 240)];
+    self.recorder.delegate = self;
     
     AVCaptureVideoPreviewLayer *previewLayer = [self.recorder previewLayer];
     previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
@@ -199,6 +200,16 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 - (void)sendVideo {
 
+}
+
+#pragma mark - PKShortVideoRecorderDelegate
+
+- (void)recorderDidBeginRecording:(PKShortVideoRecorder *)recorder {
+    
+}
+
+- (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error {
+    
 }
 
 @end
