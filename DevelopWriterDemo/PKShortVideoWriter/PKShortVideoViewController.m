@@ -178,7 +178,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)toggleRecording {
-
+    //静止自动锁屏
     [UIApplication sharedApplication].idleTimerDisabled = YES;
     
     self.beginRecordTime = [NSDate date].timeIntervalSince1970;
@@ -189,7 +189,6 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)closeCamera {
-
     [_recorder stopRecording];
 }
 
@@ -202,6 +201,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 }
 
+
 #pragma mark - PKShortVideoRecorderDelegate
 
 - (void)recorderDidBeginRecording:(PKShortVideoRecorder *)recorder {
@@ -209,7 +209,14 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error {
+    //解除自动锁屏限制
+    [UIApplication sharedApplication].idleTimerDisabled = NO;
     
+    if (error) {
+        NSLog(@"视频拍摄失败: %@", error );
+    } else {
+        
+    }
 }
 
 @end
