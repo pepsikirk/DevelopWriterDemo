@@ -61,6 +61,9 @@ static NSInteger const PKProgressItemWidth = 5;
 }
 
 - (void)restore {
+    self.progressItem.frame = CGRectMake(0, 0, PKProgressItemWidth, self.bounds.size.height);
+    self.progressingView.frame = CGRectMake(0, 0, 0, self.bounds.size.height);
+    
     [PKShortVideoProgressBar restoreLayer:self.progressItem.layer];
     [PKShortVideoProgressBar restoreLayer:self.progressingView.layer];
 }

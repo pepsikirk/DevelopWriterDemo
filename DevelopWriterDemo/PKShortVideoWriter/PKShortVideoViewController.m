@@ -211,11 +211,14 @@ static CGFloat const PKRecordButtonWidth = 90;
 - (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error {
     //解除自动锁屏限制
     [UIApplication sharedApplication].idleTimerDisabled = NO;
-    
+
     if (error) {
         NSLog(@"视频拍摄失败: %@", error );
+        [self.progressBar restore];
+        [self recordButtonAction];
     } else {
-        
+        [self.progressBar stop];
+        [self sendButtonAction];
     }
 }
 
