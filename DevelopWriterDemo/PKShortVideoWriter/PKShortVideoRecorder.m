@@ -194,7 +194,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 #pragma mark - SampleBufferDelegate methods
 
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
-    if (self.recordingStatus == PKRecordingStatusRecording) {
+    if (self.recordingStatus == PKRecordingStatusIdle) {
         return;
     }
     if (connection == self.videoConnection){

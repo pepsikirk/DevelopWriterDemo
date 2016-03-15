@@ -26,7 +26,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 @property (nonatomic, strong) UIColor *themeColor;
 
-@property (nonatomic, assign) NSTimeInterval beginRecordTime;
+@property (nonatomic, assign) CFAbsoluteTime beginRecordTime;
 
 @property (nonatomic, strong) UIButton *recordButton;
 @property (nonatomic, strong) UIButton *refreshButton;
@@ -162,7 +162,6 @@ static CGFloat const PKRecordButtonWidth = 90;
 - (void)refreshView {
     [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:nil];
     
-    [self.recordButton setTitle:@"按住拍摄" forState:UIControlStateNormal];
     [self recordButtonAction ];
     [self.playButton removeFromSuperview];
     self.playButton = nil;
@@ -181,7 +180,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     //静止自动锁屏
     [UIApplication sharedApplication].idleTimerDisabled = YES;
     
-    self.beginRecordTime = [NSDate date].timeIntervalSince1970;
+    self.beginRecordTime = CFAbsoluteTimeGetCurrent();
 
     [self.recorder startRecording];
     
@@ -198,7 +197,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)sendVideo {
-
+    
 }
 
 
@@ -214,7 +213,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 
     if (error) {
         NSLog(@"视频拍摄失败: %@", error );
-        [self.progressBar restore];
+        [self refreshView];
         [self recordButtonAction];
     } else {
         [self.progressBar stop];
