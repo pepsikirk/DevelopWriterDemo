@@ -108,7 +108,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
             
     NSError *error = nil;
     //开始
-    if(!error) {
+    if (!error) {
         BOOL success = [self.assetWriter startWriting];
         if (!success) {
             error = self.assetWriter.error;
@@ -226,7 +226,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
 }
 
 - (void)appendSampleBuffer:(CMSampleBufferRef)sampleBuffer ofMediaType:(NSString *)mediaType {
-    if(sampleBuffer == NULL){
+    if (sampleBuffer == NULL){
         @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"不存在sampleBuffer" userInfo:nil];
         return;
     }
@@ -248,14 +248,14 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
                 }
             }
             
-            if(!self.haveStartedSession && mediaType == AVMediaTypeVideo) {
+            if (!self.haveStartedSession && mediaType == AVMediaTypeVideo) {
                 [self.assetWriter startSessionAtSourceTime:CMSampleBufferGetPresentationTimeStamp(sampleBuffer)];
                 self.haveStartedSession = YES;
             }
             
             AVAssetWriterInput *input = (mediaType == AVMediaTypeVideo) ? self.videoInput : self.audioInput;
             
-            if(input.readyForMoreMediaData){
+            if (input.readyForMoreMediaData){
                 BOOL success = [input appendSampleBuffer:sampleBuffer];
                 if (!success){
                     NSError *error = self.assetWriter.error;

@@ -194,9 +194,6 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 #pragma mark - SampleBufferDelegate methods
 
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
-    if (self.recordingStatus == PKRecordingStatusIdle) {
-        return;
-    }
     if (connection == self.videoConnection){
         if (!self.assetSession.videoInitialized) {
             @synchronized(self) {
@@ -210,7 +207,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
                 }
             }
         }
-    } else if ( connection == self.audioConnection ){
+    } else if (connection == self.audioConnection ){
         if (!self.assetSession.audioInitialized) {
             @synchronized(self) {
                 CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
@@ -218,7 +215,9 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
             }
         }
         @synchronized(self) {
-            [self.assetSession appendAudioSampleBuffer:sampleBuffer];
+            if(self.recordingStatus == PKRecordingStatusRecording){
+                [self.assetSession appendAudioSampleBuffer:sampleBuffer];
+            }
         }
     }
 }
