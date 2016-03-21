@@ -40,6 +40,9 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 @property (nonatomic, strong) NSDictionary *videoCompressionSettings;
 @property (nonatomic, strong) NSDictionary *audioCompressionSettings;
 
+@property (nonatomic) CMFormatDescriptionRef outputVideoFormatDescription;
+@property (nonatomic) CMFormatDescriptionRef outputAudioFormatDescription;
+
 @property (nonatomic, assign) PKRecordingStatus recordingStatus;
 
 @property (nonatomic, retain) PKShortVideoSession *assetSession;
@@ -95,12 +98,16 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         if(self.recordingStatus != PKRecordingStatusIdle) {
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"已经在录制了" userInfo:nil];
             return;
-        }
+        }   
         [self transitionToRecordingStatus:PKRecordingStatusStartingRecording error:nil];
     }
     
     self.assetSession = [[PKShortVideoSession alloc] initWithOutputFileURL:self.outputFileURL];
     self.assetSession.delegate = self;
+    
+    [self.assetSession addVideoTrackWithSourceFormatDescription:self.outputVideoFormatDescription settings:self.videoCompressionSettings];
+    [self.assetSession addAudioTrackWithSourceFormatDescription:self.outputAudioFormatDescription settings:self.audioCompressionSettings];
+    
     [self.assetSession prepareToRecord];
 }
 
@@ -195,10 +202,10 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
     if (connection == self.videoConnection){
-        if (!self.assetSession.videoInitialized) {
+        if (!self.outputVideoFormatDescription) {
             @synchronized(self) {
                 CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
-                [self.assetSession addVideoTrackWithSourceFormatDescription:formatDescription settings:self.videoCompressionSettings];
+                self.outputVideoFormatDescription = formatDescription;
             }
         } else {
             @synchronized(self) {
@@ -208,10 +215,10 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
             }
         }
     } else if (connection == self.audioConnection ){
-        if (!self.assetSession.audioInitialized) {
+        if (!self.outputAudioFormatDescription) {
             @synchronized(self) {
                 CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
-                [self.assetSession addAudioTrackWithSourceFormatDescription:formatDescription settings:self.audioCompressionSettings];
+                self.outputAudioFormatDescription = formatDescription;
             }
         }
         @synchronized(self) {

@@ -58,10 +58,6 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
         
         _videoTrackTransform = CGAffineTransformMakeRotation(M_PI_2);//人像方向
         _outputFileURL = outputFileURL;
-        
-        NSError *error = nil;
-        [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:&error];
-        self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
     }
     return self;
 }
@@ -73,9 +69,6 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     @synchronized(self) {
         self.videoTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain(formatDescription);
         self.videoTrackSettings = [videoSettings copy];
-        
-        NSError *error = nil;
-        [self setupAssetWriterVideoInputWithSourceFormatDescription:self.videoTrackSourceFormatDescription transform:self.videoTrackTransform settings:self.videoTrackSettings error:&error];
     }
 }
 
@@ -83,9 +76,6 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     @synchronized(self) {
         self.audioTrackSourceFormatDescription = (CMFormatDescriptionRef)CFRetain(formatDescription);
         self.audioTrackSettings = [audioSettings copy];
-        
-        NSError *error = nil;
-        [self setupAssetWriterAudioInputWithSourceFormatDescription:self.audioTrackSourceFormatDescription settings:self.audioTrackSettings error:&error];
     }
 }
 
@@ -107,6 +97,17 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     }
             
     NSError *error = nil;
+    //确保当前url文件不存在
+    [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:&error];
+    self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
+    
+    //创建添加输入
+    if (!error && _videoTrackSourceFormatDescription) {
+        [self setupAssetWriterVideoInputWithSourceFormatDescription:_videoTrackSourceFormatDescription transform:_videoTrackTransform settings:_videoTrackSettings error:&error];
+    }
+    if(!error && _audioTrackSourceFormatDescription) {
+        [self setupAssetWriterAudioInputWithSourceFormatDescription:_audioTrackSourceFormatDescription settings:_audioTrackSettings error:&error];
+    }
     //开始
     if (!error) {
         BOOL success = [self.assetWriter startWriting];
@@ -186,7 +187,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
         if ([self.assetWriter canAddInput:self.audioInput]){
             [self.assetWriter addInput:self.audioInput];
         } else {
-            if (errorOut ) {
+            if (errorOut) {
                 *errorOut = [self cannotSetupInputError];
             }
             return NO;
