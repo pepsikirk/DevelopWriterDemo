@@ -59,12 +59,12 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         _outputFileURL = outputFileURL;
         _outputSize = outputSize;
         
-        _recorderQueue = dispatch_queue_create( "com.PKShortVideoWriter.sessionQueue", DISPATCH_QUEUE_SERIAL );
+        _recorderQueue = dispatch_queue_create("com.PKShortVideoWriter.sessionQueue", DISPATCH_QUEUE_SERIAL );
         
-        _audioDataOutputQueue = dispatch_queue_create( "com.PKShortVideoWriter.audioOutput", DISPATCH_QUEUE_SERIAL );
+        _audioDataOutputQueue = dispatch_queue_create("com.PKShortVideoWriter.audioOutput", DISPATCH_QUEUE_SERIAL );
 
-        _videoDataOutputQueue = dispatch_queue_create( "com.PKShortVideoWriter.videoOutput", DISPATCH_QUEUE_SERIAL );
-        dispatch_set_target_queue( _videoDataOutputQueue, dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_HIGH, 0 ) );
+        _videoDataOutputQueue = dispatch_queue_create("com.PKShortVideoWriter.videoOutput", DISPATCH_QUEUE_SERIAL );
+        dispatch_set_target_queue(_videoDataOutputQueue, dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_HIGH, 0 ) );
         
         _captureSession = [self setupCaptureSession];
         [self addDataOutputsToCaptureSession:self.captureSession];
@@ -77,13 +77,13 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 #pragma mark - Running Session
 
 - (void)startRunning {
-    dispatch_sync( self.recorderQueue, ^{
+    dispatch_sync(self.recorderQueue, ^{
         [self.captureSession startRunning];
     } );
 }
 
 - (void)stopRunning {
-    dispatch_sync( self.recorderQueue, ^{
+    dispatch_sync(self.recorderQueue, ^{
         [self stopRecording];
         [self.captureSession stopRunning];
     } );
