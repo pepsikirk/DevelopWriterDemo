@@ -22,6 +22,7 @@
 		88AA24B91C465AF0001B629F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 88AA24B71C465AF0001B629F /* LaunchScreen.storyboard */; };
 		88AA24C41C465AF0001B629F /* DevelopWriterDemoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 88AA24C31C465AF0001B629F /* DevelopWriterDemoTests.m */; };
 		88AA24CF1C465AF0001B629F /* DevelopWriterDemoUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 88AA24CE1C465AF0001B629F /* DevelopWriterDemoUITests.m */; };
+		88EC1A821CA282FA00462722 /* UIImage+PKShortVideoPlayer.m in Sources */ = {isa = PBXBuildFile; fileRef = 88EC1A811CA282FA00462722 /* UIImage+PKShortVideoPlayer.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +73,8 @@
 		88AA24CA1C465AF0001B629F /* DevelopWriterDemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DevelopWriterDemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		88AA24CE1C465AF0001B629F /* DevelopWriterDemoUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DevelopWriterDemoUITests.m; sourceTree = "<group>"; };
 		88AA24D01C465AF0001B629F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		88EC1A801CA282FA00462722 /* UIImage+PKShortVideoPlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImage+PKShortVideoPlayer.h"; sourceTree = "<group>"; };
+		88EC1A811CA282FA00462722 /* UIImage+PKShortVideoPlayer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImage+PKShortVideoPlayer.m"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +123,7 @@
 		881828C21C4E49EA00E9C51B /* AVPlayer */ = {
 			isa = PBXGroup;
 			children = (
+				88EC1A7F1CA282FA00462722 /* Categories */,
 				881828C31C4E49EA00E9C51B /* PKFullScreenPlayerView.h */,
 				881828C41C4E49EA00E9C51B /* PKFullScreenPlayerView.m */,
 				881828C51C4E49EA00E9C51B /* PKFullScreenPlayerViewController.h */,
@@ -190,6 +194,16 @@
 				88AA24D01C465AF0001B629F /* Info.plist */,
 			);
 			path = DevelopWriterDemoUITests;
+			sourceTree = "<group>";
+		};
+		88EC1A7F1CA282FA00462722 /* Categories */ = {
+			isa = PBXGroup;
+			children = (
+				88EC1A801CA282FA00462722 /* UIImage+PKShortVideoPlayer.h */,
+				88EC1A811CA282FA00462722 /* UIImage+PKShortVideoPlayer.m */,
+			);
+			name = Categories;
+			path = ../../Categories;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -332,6 +346,7 @@
 				88382D3A1C48C73E00AB8709 /* PKShortVideoProgressBar.m in Sources */,
 				88297F8E1C4CE8E30059A7B1 /* PKUtiltiies.m in Sources */,
 				881096E21C47A86B00A99726 /* PKShortVideoRecorder.m in Sources */,
+				88EC1A821CA282FA00462722 /* UIImage+PKShortVideoPlayer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

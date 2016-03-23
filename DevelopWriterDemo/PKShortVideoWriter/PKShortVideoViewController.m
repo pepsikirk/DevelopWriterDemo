@@ -12,6 +12,7 @@
 #import "PKUtiltiies.h"
 #import <AVFoundation/AVFoundation.h>
 #import "PKFullScreenPlayerViewController.h"
+#import "UIImage+PKShortVideoPlayer.h"
 
 static CGFloat PKOtherButtonVarticalHeight = 0;
 static CGFloat PKRecordButtonVarticalHeight = 0;
@@ -26,6 +27,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 @property (nonatomic, strong) UIColor *themeColor;
 
+@property (strong, nonatomic) NSTimer *stopRecordTimer;
 @property (nonatomic, assign) CFAbsoluteTime beginRecordTime;
 
 @property (nonatomic, strong) UIButton *recordButton;
@@ -95,30 +97,18 @@ static CGFloat const PKRecordButtonWidth = 90;
     self.progressBar = [[PKShortVideoProgressBar alloc] initWithFrame:CGRectMake(0, 44 + PKPreviewLayerHeight - 5, kScreenWidth, 5) themeColor:self.themeColor duration:self.videoDurationTime];
     [self.view addSubview:self.progressBar];
     
-    self.recordButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    self.recordButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.recordButton setTitle:@"按住录" forState:UIControlStateNormal];
     [self.recordButton setTitleColor:self.themeColor forState:UIControlStateNormal];
     self.recordButton.titleLabel.font = [UIFont systemFontOfSize:17.0f];
     self.recordButton.frame = CGRectMake(0, 0, PKRecordButtonWidth, PKRecordButtonWidth);
     self.recordButton.center = CGPointMake(kScreenWidth/2, PKRecordButtonVarticalHeight);
     self.recordButton.layer.cornerRadius = PKRecordButtonWidth/2;
-    self.recordButton.layer.borderWidth = 2;
+    self.recordButton.layer.borderWidth = 3;
     self.recordButton.layer.borderColor = self.themeColor.CGColor;
     self.recordButton.layer.masksToBounds = YES;
     [self recordButtonAction];
     [self.view addSubview:self.recordButton];
-    
-    self.playButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [self.playButton setImage:[UIImage imageNamed:@"PK_Play"] forState:UIControlStateNormal];
-    [self.playButton sizeToFit];
-    self.playButton.center = CGPointMake((kScreenWidth-PKRecordButtonWidth)/2/2, PKOtherButtonVarticalHeight);
-    [self.view addSubview:self.playButton];
-    
-    self.refreshButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [self.refreshButton setImage:[UIImage imageNamed:@"PK_Delete"] forState:UIControlStateNormal];
-    [self.refreshButton sizeToFit];
-    self.refreshButton.center = CGPointMake(kScreenWidth-(kScreenWidth-PKRecordButtonWidth)/2/2, PKOtherButtonVarticalHeight);
-    [self.view addSubview:self.refreshButton];
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.recorder startRunning];
@@ -161,7 +151,8 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 - (void)refreshView {
     [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:nil];
-    
+    [self.recordButton setTitle:@"按住录" forState:UIControlStateNormal];
+
     [self recordButtonAction ];
     [self.playButton removeFromSuperview];
     self.playButton = nil;
@@ -172,52 +163,101 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)playVideo {
-    PKFullScreenPlayerViewController *vc = [[PKFullScreenPlayerViewController alloc] initWithVideoURL:self.outputFileURL previewImage:nil];
-    [self.navigationController pushViewController:vc animated:YES];
+    PKFullScreenPlayerViewController *vc = [[PKFullScreenPlayerViewController alloc] initWithVideoURL:self.outputFileURL previewImage:[UIImage pk_previewImageWithVideoURL:self.outputFileURL]];
+    [self presentViewController:vc animated:NO completion:NULL];
 }
 
 - (void)toggleRecording {
     //静止自动锁屏
     [UIApplication sharedApplication].idleTimerDisabled = YES;
-    
-    self.beginRecordTime = CFAbsoluteTimeGetCurrent();
+    self.beginRecordTime = CACurrentMediaTime();
 
     [self.recorder startRecording];
-    
     [self.progressBar play];
 }
 
-- (void)closeCamera {
-    [_recorder stopRecording];
-}
-
 - (void)buttonStopRecording {
-    [self closeCamera];
-    [self.progressBar stop];
+    [self.recorder stopRecording];
 }
 
 - (void)sendVideo {
     
 }
 
+- (void)endRecordingWithURL:(NSURL *)URL failture:(BOOL)failture {
+    [self.progressBar restore];
+
+    [self.recordButton setTitle:@"按住拍摄" forState:UIControlStateNormal];
+    
+    if (failture) {
+        [PKShortVideoViewController showAlertViewWithText:@"生成视频失败"];
+    } else {
+        [PKShortVideoViewController showAlertViewWithText:@"请长按超过1秒"];
+    }
+    
+    [[NSFileManager defaultManager] removeItemAtURL:URL error:nil];
+    [self recordButtonAction];
+}
+
++ (void)showAlertViewWithText:(NSString *)text {
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"录制小视频失败" message:text delegate:nil cancelButtonTitle:@"确定" otherButtonTitles:nil];
+    [alertView show];
+}
+
+- (void)invalidateTime {
+    if ([self.stopRecordTimer isValid]) {
+        [self.stopRecordTimer invalidate];
+        self.stopRecordTimer = nil;
+    }
+}
+
 
 #pragma mark - PKShortVideoRecorderDelegate
 
 - (void)recorderDidBeginRecording:(PKShortVideoRecorder *)recorder {
+    self.stopRecordTimer = [NSTimer scheduledTimerWithTimeInterval:6.0 target:self selector:@selector(buttonStopRecording) userInfo:nil repeats:NO];
     
+    [self.recordButton setTitle:@"" forState:UIControlStateNormal];
 }
 
 - (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error {
     //解除自动锁屏限制
     [UIApplication sharedApplication].idleTimerDisabled = NO;
+    
+    [self invalidateTime];
 
     if (error) {
         NSLog(@"视频拍摄失败: %@", error );
-        [self refreshView];
-        [self recordButtonAction];
+        [self endRecordingWithURL:outputFileURL failture:YES];
     } else {
-        [self.progressBar stop];
-        [self sendButtonAction];
+        CFAbsoluteTime nowTime = CACurrentMediaTime();
+        if (self.beginRecordTime != 0 && nowTime - self.beginRecordTime < 1) {
+            [self endRecordingWithURL:outputFileURL failture:NO];
+        } else {
+            self.outputFileURL = outputFileURL;
+            
+            [self.progressBar stop];
+            [self.recordButton setTitle:@"发送" forState:UIControlStateNormal];
+            
+            self.playButton = [UIButton buttonWithType:UIButtonTypeCustom];
+            self.playButton.tintColor = self.themeColor;
+            UIImage *playImage = [[UIImage imageNamed:@"PK_Play"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+            [self.playButton setImage:playImage forState:UIControlStateNormal];
+            [self.playButton sizeToFit];
+            self.playButton.center = CGPointMake((kScreenWidth-PKRecordButtonWidth)/2/2, PKOtherButtonVarticalHeight);
+            [self.view addSubview:self.playButton];
+            
+            self.refreshButton = [UIButton buttonWithType:UIButtonTypeCustom];
+            self.refreshButton.tintColor = self.themeColor;
+            UIImage *refreshImage = [[UIImage imageNamed:@"PK_Delete"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+            [self.refreshButton setImage:refreshImage forState:UIControlStateNormal];
+            [self.refreshButton sizeToFit];
+            self.refreshButton.center = CGPointMake(kScreenWidth-(kScreenWidth-PKRecordButtonWidth)/2/2, PKOtherButtonVarticalHeight);
+            [self.view addSubview:self.refreshButton];
+            
+            [self sendButtonAction];
+        }
+
     }
 }
 
