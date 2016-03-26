@@ -83,10 +83,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     
     [toolbar setItems:@[cancelItem,flexible,transformItem]];
     
-    NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
-    NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mp4"]];
-    
-    self.recorder = [[PKShortVideoRecorder alloc] initWithOutputFileURL:[NSURL fileURLWithPath:outputFilePath] outputSize:CGSizeMake(320, 240)];
+    self.recorder = [[PKShortVideoRecorder alloc] initWithOutputFileURL:self.outputFileURL outputSize:CGSizeMake(320, 240)];
     self.recorder.delegate = self;
     
     AVCaptureVideoPreviewLayer *previewLayer = [self.recorder previewLayer];

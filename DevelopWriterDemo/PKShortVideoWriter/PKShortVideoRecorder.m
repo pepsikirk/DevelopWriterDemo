@@ -22,6 +22,8 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 @property (nonatomic, strong) NSURL *outputFileURL;
 @property (nonatomic, assign) CGSize outputSize;
 
+@property (nonatomic, strong) NSURL *tempFileURL;
+
 @property (nonatomic, strong) dispatch_queue_t recorderQueue;
 
 @property (nonatomic, strong) dispatch_queue_t videoDataOutputQueue;
@@ -95,14 +97,18 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 - (void)startRecording {
     @synchronized(self) {
-        if(self.recordingStatus != PKRecordingStatusIdle) {
+        if (self.recordingStatus != PKRecordingStatusIdle) {
             @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"已经在录制了" userInfo:nil];
             return;
         }   
         [self transitionToRecordingStatus:PKRecordingStatusStartingRecording error:nil];
     }
     
-    self.assetSession = [[PKShortVideoSession alloc] initWithOutputFileURL:self.outputFileURL];
+    NSString *tempFileName = [NSProcessInfo processInfo].globallyUniqueString;
+    NSString *tempFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[tempFileName stringByAppendingPathExtension:@"mp4"]];
+    self.tempFileURL = [NSURL fileURLWithPath:tempFilePath];
+    
+    self.assetSession = [[PKShortVideoSession alloc] initWithOutputFileURL:self.tempFileURL];
     self.assetSession.delegate = self;
     
     [self.assetSession addVideoTrackWithSourceFormatDescription:self.outputVideoFormatDescription settings:self.videoCompressionSettings];
@@ -134,12 +140,14 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
             AVCaptureDevice *newCamera = nil;
             AVCaptureDeviceInput *newInput = nil;
             
-            if (position == AVCaptureDevicePositionFront)
+            if (position == AVCaptureDevicePositionFront) {
                 newCamera = [self cameraWithPosition:AVCaptureDevicePositionBack];
-            else
+            } else {
                 newCamera = [self cameraWithPosition:AVCaptureDevicePositionFront];
-            newInput = [AVCaptureDeviceInput deviceInputWithDevice:newCamera error:nil];
+            }
             
+            newInput = [AVCaptureDeviceInput deviceInputWithDevice:newCamera error:nil];
+
             // beginConfiguration 确保改变不会立刻应用
             [self.captureSession beginConfiguration];
             
@@ -187,8 +195,6 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
                                         AVVideoMaxKeyFrameIntervalKey : @(30) };
     
     self.videoCompressionSettings = @{ AVVideoCodecKey : AVVideoCodecH264,
-                                       AVVideoWidthKey : @(self.outputSize.width),
-                                      AVVideoHeightKey : @(self.outputSize.height),
                        AVVideoCompressionPropertiesKey : compressionProperties };
     
     // 音频设置
@@ -209,7 +215,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
             }
         } else {
             @synchronized(self) {
-                if(self.recordingStatus == PKRecordingStatusRecording){
+                if (self.recordingStatus == PKRecordingStatusRecording){
                     [self.assetSession appendVideoSampleBuffer:sampleBuffer];
                 }
             }
@@ -222,7 +228,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
             }
         }
         @synchronized(self) {
-            if(self.recordingStatus == PKRecordingStatusRecording){
+            if (self.recordingStatus == PKRecordingStatusRecording){
                 [self.assetSession appendAudioSampleBuffer:sampleBuffer];
             }
         }
@@ -233,7 +239,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 - (void)sessionDidFinishPreparing:(PKShortVideoRecorder *)writer {
     @synchronized(self) {
-        if(self.recordingStatus != PKRecordingStatusStartingRecording){
+        if (self.recordingStatus != PKRecordingStatusStartingRecording){
             return;
         }
         [self transitionToRecordingStatus:PKRecordingStatusRecording error:nil];
@@ -372,8 +378,8 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 #pragma mark - Getter
 
 - (AVCaptureVideoPreviewLayer *)previewLayer {
-    if(!_previewLayer && _captureSession){
-        _previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:_captureSession];
+    if (!_previewLayer && _captureSession){
+        _previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:self.captureSession];
     }
     return _previewLayer;
 }

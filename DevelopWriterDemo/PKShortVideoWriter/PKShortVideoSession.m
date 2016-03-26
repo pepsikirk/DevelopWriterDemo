@@ -103,10 +103,10 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     
     //创建添加输入
     if (!error && _videoTrackSourceFormatDescription) {
-        [self setupAssetWriterVideoInputWithSourceFormatDescription:_videoTrackSourceFormatDescription transform:_videoTrackTransform settings:_videoTrackSettings error:&error];
+        [self setupAssetWriterVideoInputWithSourceFormatDescription:self.videoTrackSourceFormatDescription transform:self.videoTrackTransform settings:self.videoTrackSettings error:&error];
     }
-    if(!error && _audioTrackSourceFormatDescription) {
-        [self setupAssetWriterAudioInputWithSourceFormatDescription:_audioTrackSourceFormatDescription settings:_audioTrackSettings error:&error];
+    if (!error && _audioTrackSourceFormatDescription) {
+        [self setupAssetWriterAudioInputWithSourceFormatDescription:self.audioTrackSourceFormatDescription settings:self.audioTrackSettings error:&error];
     }
     //开始
     if (!error) {
@@ -164,7 +164,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
             [self.assetWriter finishWritingWithCompletionHandler:^{
                 @synchronized(self) {
                     NSError *error = self.assetWriter.error;
-                    if(error){
+                    if (error){
                         [self transitionToStatus:PKSessionStatusFailed error:error];
                     }
                     else {
