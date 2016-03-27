@@ -291,12 +291,22 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
             } else if (oldStatus == PKRecordingStatusStoppingRecording && newStatus == PKRecordingStatusIdle) {
                 dispatch_async( dispatch_get_main_queue(), ^{
                     @autoreleasepool {
-                        [self.delegate recorder:self didFinishRecordingToOutputFileURL:self.outputFileURL error:nil];
+                        [self.delegate recorderDidEndRecording:self];
                     }
                 });
+                [self transformVideo];
             }
         }
     }
+}
+
+- (void)transformVideo {
+    
+    dispatch_async( dispatch_get_main_queue(), ^{
+        @autoreleasepool {
+            [self.delegate recorder:self didFinishRecordingToOutputFileURL:self.outputFileURL error:nil];
+        }
+    });
 }
 
 

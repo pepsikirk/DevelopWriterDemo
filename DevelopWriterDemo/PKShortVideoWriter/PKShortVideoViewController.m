@@ -217,6 +217,10 @@ static CGFloat const PKRecordButtonWidth = 90;
     [self.recordButton setTitle:@"" forState:UIControlStateNormal];
 }
 
+- (void)recorderDidEndRecording:(PKShortVideoRecorder *)recorder {
+    
+}
+
 - (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error {
     //解除自动锁屏限制
     [UIApplication sharedApplication].idleTimerDisabled = NO;

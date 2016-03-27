@@ -16,6 +16,7 @@
 @required
 
 - (void)recorderDidBeginRecording:(PKShortVideoRecorder *)recorder;
+- (void)recorderDidEndRecording:(PKShortVideoRecorder *)recorder;
 - (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error;
 
 @end
