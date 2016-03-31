@@ -12,6 +12,6 @@
 
 @property (nonatomic, assign) NSTimeInterval videoDurationTime;
 
-- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL outputSize:(CGSize)outputSize themeColor:(UIColor *)themeColor ;
+- (instancetype)initWithOutputFilePath:(NSString *)outputFilePath outputSize:(CGSize)outputSize themeColor:(UIColor *)themeColor;
 
 @end

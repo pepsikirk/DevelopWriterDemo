@@ -22,7 +22,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 @interface PKShortVideoViewController() <PKShortVideoRecorderDelegate>
 
-@property (nonatomic, strong) NSURL *outputFileURL;
+@property (nonatomic, strong) NSString *outputFilePath;
 @property (nonatomic, assign) CGSize outputSize;
 
 @property (nonatomic, strong) UIColor *themeColor;
@@ -43,11 +43,11 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 #pragma mark - Init 
 
-- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL outputSize:(CGSize)outputSize themeColor:(UIColor *)themeColor {
+- (instancetype)initWithOutputFilePath:(NSString *)outputFilePath outputSize:(CGSize)outputSize themeColor:(UIColor *)themeColor {
     self = [super init];
     if (self) {
         _themeColor = themeColor;
-        _outputFileURL = outputFileURL;
+        _outputFilePath = outputFilePath;
         _outputSize = outputSize;
         _videoDurationTime = 6;
     }
@@ -83,7 +83,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     
     [toolbar setItems:@[cancelItem,flexible,transformItem]];
     
-    self.recorder = [[PKShortVideoRecorder alloc] initWithOutputFileURL:self.outputFileURL outputSize:CGSizeMake(320, 240)];
+    self.recorder = [[PKShortVideoRecorder alloc] initWithOutputFilePath:self.outputFilePath outputSize:self.outputSize];
     self.recorder.delegate = self;
     
     AVCaptureVideoPreviewLayer *previewLayer = [self.recorder previewLayer];
@@ -147,7 +147,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)refreshView {
-    [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:self.outputFilePath error:nil];
     [self.recordButton setTitle:@"按住录" forState:UIControlStateNormal];
 
     [self recordButtonAction ];
@@ -160,7 +160,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)playVideo {
-    PKFullScreenPlayerViewController *vc = [[PKFullScreenPlayerViewController alloc] initWithVideoURL:self.outputFileURL previewImage:[UIImage pk_previewImageWithVideoURL:self.outputFileURL]];
+    PKFullScreenPlayerViewController *vc = [[PKFullScreenPlayerViewController alloc] initWithVideoURL:[NSURL fileURLWithPath:self.outputFilePath] previewImage:[UIImage pk_previewImageWithVideoURL:[NSURL fileURLWithPath:self.outputFilePath]]];
     [self presentViewController:vc animated:NO completion:NULL];
 }
 
@@ -181,7 +181,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     
 }
 
-- (void)endRecordingWithURL:(NSURL *)URL failture:(BOOL)failture {
+- (void)endRecordingWithPath:(NSString *)Path failture:(BOOL)failture {
     [self.progressBar restore];
 
     [self.recordButton setTitle:@"按住拍摄" forState:UIControlStateNormal];
@@ -192,7 +192,7 @@ static CGFloat const PKRecordButtonWidth = 90;
         [PKShortVideoViewController showAlertViewWithText:@"请长按超过1秒"];
     }
     
-    [[NSFileManager defaultManager] removeItemAtURL:URL error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:Path error:nil];
     [self recordButtonAction];
 }
 
@@ -221,7 +221,7 @@ static CGFloat const PKRecordButtonWidth = 90;
     
 }
 
-- (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error {
+- (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFilePath:(NSString *)outputFilePath error:(NSError *)error {
     //解除自动锁屏限制
     [UIApplication sharedApplication].idleTimerDisabled = NO;
     
@@ -229,13 +229,13 @@ static CGFloat const PKRecordButtonWidth = 90;
 
     if (error) {
         NSLog(@"视频拍摄失败: %@", error );
-        [self endRecordingWithURL:outputFileURL failture:YES];
+        [self endRecordingWithPath:outputFilePath failture:YES];
     } else {
         CFAbsoluteTime nowTime = CACurrentMediaTime();
         if (self.beginRecordTime != 0 && nowTime - self.beginRecordTime < 1) {
-            [self endRecordingWithURL:outputFileURL failture:NO];
+            [self endRecordingWithPath:outputFilePath failture:NO];
         } else {
-            self.outputFileURL = outputFileURL;
+            self.outputFilePath = outputFilePath;
             
             [self.progressBar stop];
             [self.recordButton setTitle:@"发送" forState:UIControlStateNormal];

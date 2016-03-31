@@ -19,7 +19,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 @interface PKShortVideoRecorder() <AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate, PKShortVideoSessionDelegate>
 
-@property (nonatomic, strong) NSURL *outputFileURL;
+@property (nonatomic, strong) NSString *outputFilePath;
 @property (nonatomic, assign) CGSize outputSize;
 
 @property (nonatomic, strong) NSURL *tempFileURL;
@@ -55,10 +55,10 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 #pragma mark - Init
 
-- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL outputSize:(CGSize)outputSize {
+- (instancetype)initWithOutputFilePath:(NSString *)outputFilePath outputSize:(CGSize)outputSize {
     self = [super init];
     if (self) {
-        _outputFileURL = outputFileURL;
+        _outputFilePath = outputFilePath;
         _outputSize = outputSize;
         
         _recorderQueue = dispatch_queue_create("com.PKShortVideoWriter.sessionQueue", DISPATCH_QUEUE_SERIAL );
@@ -277,7 +277,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         if (error && (newStatus == PKRecordingStatusIdle)){
             dispatch_async( dispatch_get_main_queue(), ^{
                 @autoreleasepool {
-                    [self.delegate recorder:self didFinishRecordingToOutputFileURL:self.outputFileURL error:error];
+                    [self.delegate recorder:self didFinishRecordingToOutputFilePath:self.outputFilePath error:error];
                 }
             });
         } else {
@@ -301,12 +301,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 }
 
 - (void)transformVideo {
-    
-    dispatch_async( dispatch_get_main_queue(), ^{
-        @autoreleasepool {
-            [self.delegate recorder:self didFinishRecordingToOutputFileURL:self.outputFileURL error:nil];
-        }
-    });
+
 }
 
 

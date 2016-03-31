@@ -17,7 +17,7 @@
 
 - (void)recorderDidBeginRecording:(PKShortVideoRecorder *)recorder;
 - (void)recorderDidEndRecording:(PKShortVideoRecorder *)recorder;
-- (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error;
+- (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFilePath:(NSString *)outputFilePath error:(NSError *)error;
 
 @end
 
@@ -29,7 +29,7 @@
 
 @property (nonatomic, weak) id<PKShortVideoRecorderDelegate> delegate;
 
-- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL outputSize:(CGSize)outputSize;
+- (instancetype)initWithOutputFilePath:(NSString *)outputFilePath outputSize:(CGSize)outputSize;
 
 - (void)startRunning;
 - (void)stopRunning;
