@@ -19,7 +19,7 @@
 
 @property (nonatomic, weak) id<PKShortVideoSessionDelegate> delegate;
 
-- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL;
+- (instancetype)initWithTempFilePath:(NSString *)tempFilePath;
 
 - (void)addVideoTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)videoSettings;
 - (void)addAudioTrackWithSourceFormatDescription:(CMFormatDescriptionRef)formatDescription settings:(NSDictionary *)audioSettings;

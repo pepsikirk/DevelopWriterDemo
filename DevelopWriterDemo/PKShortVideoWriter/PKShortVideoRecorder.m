@@ -22,7 +22,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 @property (nonatomic, strong) NSString *outputFilePath;
 @property (nonatomic, assign) CGSize outputSize;
 
-@property (nonatomic, strong) NSURL *tempFileURL;
+@property (nonatomic, strong) NSString *tempFilePath;
 
 @property (nonatomic, strong) dispatch_queue_t recorderQueue;
 
@@ -105,10 +105,9 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     }
     
     NSString *tempFileName = [NSProcessInfo processInfo].globallyUniqueString;
-    NSString *tempFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[tempFileName stringByAppendingPathExtension:@"mp4"]];
-    self.tempFileURL = [NSURL fileURLWithPath:tempFilePath];
+    self.tempFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[tempFileName stringByAppendingPathExtension:@"mp4"]];
     
-    self.assetSession = [[PKShortVideoSession alloc] initWithOutputFileURL:self.tempFileURL];
+    self.assetSession = [[PKShortVideoSession alloc] initWithTempFilePath:self.tempFilePath];
     self.assetSession.delegate = self;
     
     [self.assetSession addVideoTrackWithSourceFormatDescription:self.outputVideoFormatDescription settings:self.videoCompressionSettings];

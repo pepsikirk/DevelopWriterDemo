@@ -25,7 +25,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
 @property (nonatomic) dispatch_queue_t writingQueue;
 @property (nonatomic) dispatch_queue_t delegateCallbackQueue;
 
-@property (nonatomic) NSURL *outputFileURL;
+@property (nonatomic) NSString *tempFilePath;
 
 @property (nonatomic) AVAssetWriter *assetWriter;
 @property (nonatomic) BOOL haveStartedSession;
@@ -46,8 +46,8 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
 @implementation PKShortVideoSession
 
 
-- (instancetype)initWithOutputFileURL:(NSURL *)outputFileURL {
-    if (!outputFileURL) {
+- (instancetype)initWithTempFilePath:(NSString *)tempFilePath {
+    if (!tempFilePath) {
         return nil;
     }
     
@@ -57,7 +57,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
         _writingQueue = dispatch_queue_create( "com.PKShortVideoWriter.assetwriter", DISPATCH_QUEUE_SERIAL );
         
         _videoTrackTransform = CGAffineTransformMakeRotation(M_PI_2);//人像方向
-        _outputFileURL = outputFileURL;
+        _tempFilePath = tempFilePath;
     }
     return self;
 }
@@ -98,8 +98,8 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
             
     NSError *error = nil;
     //确保当前url文件不存在
-    [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:&error];
-    self.assetWriter = [[AVAssetWriter alloc] initWithURL:self.outputFileURL fileType:AVFileTypeMPEG4 error:&error];
+    [[NSFileManager defaultManager] removeItemAtPath:self.tempFilePath error:&error];
+    self.assetWriter = [[AVAssetWriter alloc] initWithURL:[NSURL fileURLWithPath:self.tempFilePath] fileType:AVFileTypeMPEG4 error:&error];
     
     //创建添加输入
     if (!error && _videoTrackSourceFormatDescription) {
@@ -284,7 +284,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
                 self.videoInput = nil;
                 self.audioInput = nil;
                 if (newStatus == PKSessionStatusFailed) {//失败删除
-                    [[NSFileManager defaultManager] removeItemAtURL:self.outputFileURL error:NULL];
+                    [[NSFileManager defaultManager] removeItemAtPath:self.tempFilePath error:NULL];
                 }
             } );
         } else if (newStatus == PKSessionStatusRecording){
