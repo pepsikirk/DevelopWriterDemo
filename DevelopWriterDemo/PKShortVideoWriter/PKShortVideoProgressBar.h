@@ -8,6 +8,8 @@
 
 #import <UIKit/UIKit.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface PKShortVideoProgressBar : UIView
 
 - (instancetype)initWithFrame:(CGRect)frame themeColor:(UIColor *)themeColor duration:(NSTimeInterval)duration;
@@ -16,3 +18,5 @@
 - (void)restore;
 
 @end
+
+NS_ASSUME_NONNULL_END
