@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PKFullScreenPlayerViewController : UIViewController
 
-- (instancetype)initWithVideoURL:(NSURL *)videoURL previewImage:(UIImage *)previewImage;
+- (instancetype)initWithVideoPath:(NSString *)videoPath previewImage:(UIImage *)previewImage;
 
 @end
 

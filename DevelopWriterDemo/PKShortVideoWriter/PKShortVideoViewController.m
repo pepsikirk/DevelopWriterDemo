@@ -160,7 +160,8 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)playVideo {
-    PKFullScreenPlayerViewController *vc = [[PKFullScreenPlayerViewController alloc] initWithVideoURL:[NSURL fileURLWithPath:self.outputFilePath] previewImage:[UIImage pk_previewImageWithVideoURL:[NSURL fileURLWithPath:self.outputFilePath]]];
+    UIImage *image = [UIImage pk_previewImageWithVideoURL:[NSURL fileURLWithPath:self.outputFilePath]];
+    PKFullScreenPlayerViewController *vc = [[PKFullScreenPlayerViewController alloc] initWithVideoPath:self.outputFilePath previewImage:image];
     [self presentViewController:vc animated:NO completion:NULL];
 }
 
