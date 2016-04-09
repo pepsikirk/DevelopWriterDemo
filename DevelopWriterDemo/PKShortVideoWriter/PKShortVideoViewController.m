@@ -219,7 +219,8 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)recorderDidEndRecording:(PKShortVideoRecorder *)recorder {
-    
+    [self.progressBar stop];
+
 }
 
 - (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFilePath:(NSString *)outputFilePath error:(NSError *)error {
@@ -237,8 +238,6 @@ static CGFloat const PKRecordButtonWidth = 90;
             [self endRecordingWithPath:outputFilePath failture:NO];
         } else {
             self.outputFilePath = outputFilePath;
-            
-            [self.progressBar stop];
             [self.recordButton setTitle:@"发送" forState:UIControlStateNormal];
             
             self.playButton = [UIButton buttonWithType:UIButtonTypeCustom];

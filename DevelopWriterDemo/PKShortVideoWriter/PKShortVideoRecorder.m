@@ -300,7 +300,71 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 }
 
 - (void)transformVideo {
-
+    AVAsset *avAsset = [AVAsset assetWithURL:[NSURL fileURLWithPath:self.tempFilePath]];
+    CMTime assetTime = [avAsset duration];
+    
+    AVMutableComposition *avMutableComposition = [AVMutableComposition composition];
+    
+    AVMutableCompositionTrack *avMutableCompositionTrack = [avMutableComposition addMutableTrackWithMediaType:AVMediaTypeVideo preferredTrackID:kCMPersistentTrackID_Invalid];
+    
+    AVAssetTrack *avAssetTrack = [[avAsset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
+    
+    // 这块是裁剪,rangtime .前面的是开始时间,后面是裁剪多长
+    [avMutableCompositionTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, assetTime)
+                                       ofTrack:avAssetTrack
+                                        atTime:kCMTimeZero error:nil];
+    
+    AVMutableVideoComposition *avMutableVideoComposition = [AVMutableVideoComposition videoComposition];
+    avMutableVideoComposition.renderSize = self.outputSize;
+    
+    avMutableVideoComposition.frameDuration = CMTimeMake(1, 24);
+    
+    AVMutableVideoCompositionInstruction *avMutableVideoCompositionInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
+    
+    [avMutableVideoCompositionInstruction setTimeRange:CMTimeRangeMake(kCMTimeZero, [avMutableComposition duration])];
+    
+    AVMutableVideoCompositionLayerInstruction *avMutableVideoCompositionLayerInstruction = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:avAssetTrack];
+    
+    [avMutableVideoCompositionLayerInstruction setTransform:avAssetTrack.preferredTransform atTime:kCMTimeZero];
+    CGAffineTransform transform = CGAffineTransformMake(0, 8/9.0, -8/9.0, 0, 320, -93.3333333);
+    
+    [avMutableVideoCompositionLayerInstruction setTransform:transform atTime:kCMTimeZero];
+    
+    avMutableVideoCompositionInstruction.layerInstructions = [NSArray arrayWithObject:avMutableVideoCompositionLayerInstruction];
+    avMutableVideoComposition.instructions = [NSArray arrayWithObject:avMutableVideoCompositionInstruction];
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:self.tempFilePath]) {
+        NSString *path = [self.tempFilePath stringByDeletingPathExtension];
+        [fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:NULL];
+    }
+    
+    AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:avAsset presetName:AVAssetExportPresetMediumQuality];
+    exportSession.outputURL = [NSURL fileURLWithPath:self.outputFilePath];
+    exportSession.outputFileType = AVFileTypeMPEG4;
+    exportSession.shouldOptimizeForNetworkUse = YES;
+    [exportSession setVideoComposition:avMutableVideoComposition];
+    
+    [exportSession exportAsynchronouslyWithCompletionHandler:^(void) {
+        if (exportSession.status == AVAssetExportSessionStatusCompleted) {
+            [fileManager removeItemAtPath:self.tempFilePath error:nil];
+            dispatch_async( dispatch_get_main_queue(), ^{
+                @autoreleasepool {
+                    [self.delegate recorder:self didFinishRecordingToOutputFilePath:self.outputFilePath error:nil];
+                }
+            });
+        } else {
+            NSError *error = [exportSession error];
+            if (!error) {
+                error = [NSError errorWithDomain:@"压缩视频失败" code:-1 userInfo:nil];
+            }
+            dispatch_async( dispatch_get_main_queue(), ^{
+                @autoreleasepool {
+                    [self.delegate recorder:self didFinishRecordingToOutputFilePath:nil error:error];
+                }
+            });
+        }
+    }];
 }
 
 
