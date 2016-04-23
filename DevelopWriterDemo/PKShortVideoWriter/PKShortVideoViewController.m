@@ -179,7 +179,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 }
 
 - (void)sendVideo {
-    
+    [self dismissViewControllerAnimated:YES completion:NULL];
 }
 
 - (void)endRecordingWithPath:(NSString *)Path failture:(BOOL)failture {
@@ -220,7 +220,6 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 - (void)recorderDidEndRecording:(PKShortVideoRecorder *)recorder {
     [self.progressBar stop];
-
 }
 
 - (void)recorder:(PKShortVideoRecorder *)recorder didFinishRecordingToOutputFilePath:(NSString *)outputFilePath error:(NSError *)error {

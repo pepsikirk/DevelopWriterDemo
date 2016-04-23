@@ -20,6 +20,8 @@ static NSInteger const PKProgressItemWidth = 5;
 @property (strong, nonatomic) UIView *progressingView;
 @property (nonatomic, strong) UIView *coverView;
 
+@property (nonatomic, assign) CFTimeInterval beginTime;
+
 @end
 
 @implementation PKShortVideoProgressBar
@@ -52,47 +54,27 @@ static NSInteger const PKProgressItemWidth = 5;
     [UIView animateWithDuration:self.duration delay:0 options:UIViewAnimationOptionCurveLinear animations:^{
         self.progressItem.frame = CGRectMake(self.bounds.size.width - PKProgressItemWidth, 0, PKProgressItemWidth, self.bounds.size.height);
         self.progressingView.frame = CGRectMake(0, 0, self.bounds.size.width - PKProgressItemWidth, self.bounds.size.height);
+        self.beginTime = CACurrentMediaTime();
     } completion:NULL];
 }
 
 - (void)stop {
-    [PKShortVideoProgressBar pauseLayer:self.progressItem.layer];
-    [PKShortVideoProgressBar pauseLayer:self.progressingView.layer];
+    [self.progressItem.layer removeAllAnimations];
+    [self.progressingView.layer removeAllAnimations];
+    
+    CGFloat temp = (CACurrentMediaTime() - self.beginTime)/self.duration;
+    CGFloat progress = temp + 0.018*(1 - temp);
+    self.progressItem.frame = CGRectMake(self.bounds.size.width*(progress) - PKProgressItemWidth, 0, PKProgressItemWidth, self.bounds.size.height);
+    self.progressingView.frame = CGRectMake(0, 0, self.bounds.size.width*(progress) - PKProgressItemWidth, self.bounds.size.height);
 }
 
 - (void)restore {
+    [self.progressItem.layer removeAllAnimations];
+    [self.progressingView.layer removeAllAnimations];
+    
     self.progressItem.frame = CGRectMake(0, 0, PKProgressItemWidth, self.bounds.size.height);
     self.progressingView.frame = CGRectMake(0, 0, 0, self.bounds.size.height);
-    
-    [PKShortVideoProgressBar restoreLayer:self.progressItem.layer];
-    [PKShortVideoProgressBar restoreLayer:self.progressingView.layer];
 }
 
-
-
-#pragma mark - Private
-
-//暂停layer上面的动画
-+ (void)pauseLayer:(CALayer*)layer {
-    CFTimeInterval pausedTime = [layer convertTime:CACurrentMediaTime() fromLayer:nil];
-    layer.speed = 0.0;
-    layer.timeOffset = pausedTime;
-}
-
-+ (void)restoreLayer:(CALayer *)layer {
-    layer.speed = 1.0;
-    layer.timeOffset = 0.0;
-    [layer removeAllAnimations];
-}
-
-//继续layer上面的动画
-+ (void)resumeLayer:(CALayer*)layer {
-    CFTimeInterval pausedTime = [layer timeOffset];
-    layer.speed = 1.0;
-    layer.timeOffset = 0.0;
-    layer.beginTime = 0.0;
-    CFTimeInterval timeSincePause = [layer convertTime:CACurrentMediaTime() fromLayer:nil] - pausedTime;
-    layer.beginTime = timeSincePause;
-}
 
 @end

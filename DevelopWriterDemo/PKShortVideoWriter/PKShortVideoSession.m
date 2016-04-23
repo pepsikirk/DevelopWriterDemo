@@ -152,7 +152,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
         }
     }
     
-    dispatch_async( _writingQueue, ^{
+    dispatch_async(_writingQueue, ^{
         @autoreleasepool {
             @synchronized(self) {
                 if (self.status != PKSessionStatusFinishingRecordingPart1) {
@@ -164,10 +164,9 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
             [self.assetWriter finishWritingWithCompletionHandler:^{
                 @synchronized(self) {
                     NSError *error = self.assetWriter.error;
-                    if (error){
+                    if (error) {
                         [self transitionToStatus:PKSessionStatusFailed error:error];
-                    }
-                    else {
+                    } else {
                         [self transitionToStatus:PKSessionStatusFinished error:nil];
                     }
                 }
@@ -294,7 +293,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
     }
     
     if (shouldNotifyDelegate && self.delegate){
-        dispatch_async( self.delegateCallbackQueue, ^{
+        dispatch_async(self.delegateCallbackQueue, ^{
             
             @autoreleasepool {
                 switch(newStatus){
