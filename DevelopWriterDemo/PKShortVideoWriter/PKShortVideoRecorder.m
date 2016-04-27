@@ -98,7 +98,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 - (void)startRecording {
     @synchronized(self) {
         if (self.recordingStatus != PKRecordingStatusIdle) {
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"已经在录制了" userInfo:nil];
+            //已经在录制了
             return;
         }   
         [self transitionToRecordingStatus:PKRecordingStatusStartingRecording error:nil];
