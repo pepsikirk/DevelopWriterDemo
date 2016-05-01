@@ -146,8 +146,7 @@ typedef NS_ENUM(NSInteger, PKSessionStatus){
         
         if (shouldFinishRecording){
             [self transitionToStatus:PKSessionStatusFinishingRecordingPart1 error:nil];
-        }
-        else {
+        } else {
             return;
         }
     }

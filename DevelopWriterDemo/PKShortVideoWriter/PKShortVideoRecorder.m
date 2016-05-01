@@ -98,7 +98,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 - (void)startRecording {
     @synchronized(self) {
         if (self.recordingStatus != PKRecordingStatusIdle) {
-            //已经在录制了
+            NSLog(@"已经在录制了");
             return;
         }   
         [self transitionToRecordingStatus:PKRecordingStatusStartingRecording error:nil];
@@ -246,21 +246,21 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 }
 
 - (void)session:(PKShortVideoRecorder *)writer didFailWithError:(NSError *)error {
-    @synchronized( self ) {
+    @synchronized(self) {
         self.assetSession = nil;
         [self transitionToRecordingStatus:PKRecordingStatusIdle error:error];
     }
 }
 
 - (void)sessionDidFinishRecording:(PKShortVideoRecorder *)writer {
-    @synchronized( self ) {
+    @synchronized(self) {
         if ( self.recordingStatus != PKRecordingStatusStoppingRecording ) {
             return;
         }
     }
     self.assetSession = nil;
     
-    @synchronized( self ) {
+    @synchronized(self) {
         [self transitionToRecordingStatus:PKRecordingStatusIdle error:nil];
     }
 }
@@ -314,7 +314,7 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     NSArray *trackArray = [asset tracksWithMediaType:AVMediaTypeVideo];
     if (!trackArray.count) {
         error = [NSError errorWithDomain:@"压缩视频失败" code:-1 userInfo:nil];
-        dispatch_async( dispatch_get_main_queue(), ^{
+        dispatch_async(dispatch_get_main_queue(), ^{
             @autoreleasepool {
                 [self.delegate recorder:self didFinishRecordingToOutputFilePath:nil error:error];
             }
@@ -322,30 +322,25 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         return;
     }
     AVAssetTrack *assetTrack = [trackArray objectAtIndex:0];
-
-    CMTime totalDuration = kCMTimeZero;
-    
     //方向
     AVMutableVideoCompositionLayerInstruction *layerInstruciton = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:assetTrack];
     
-    totalDuration = CMTimeAdd(totalDuration, asset.duration);
-    
-    CGSize orginSize = assetTrack.naturalSize;
-    CGAffineTransform layerTransform = assetTrack.preferredTransform;
-//    CGAffineTransform layerTransform = CGAffineTransformMake(0, 1, -1, 0, 480, 0);
+//    CGAffineTransform layerTransform = assetTrack.preferredTransform;
+    CGAffineTransform layerTransform = CGAffineTransformMake(0, 1, -1, 0, 480, 0);
     [layerInstruciton setTransform:layerTransform atTime:kCMTimeZero];
     
     // Export
     AVMutableVideoCompositionInstruction *mainInstruciton = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
-    mainInstruciton.timeRange = CMTimeRangeMake(kCMTimeZero, totalDuration);
+    mainInstruciton.timeRange = CMTimeRangeMake(kCMTimeZero, asset.duration);
     mainInstruciton.layerInstructions = @[layerInstruciton];
+    
     AVMutableVideoComposition *mainCompositionInst = [AVMutableVideoComposition videoComposition];
     mainCompositionInst.instructions = @[mainInstruciton];
     mainCompositionInst.frameDuration = CMTimeMake(1, 30);
     mainCompositionInst.renderSize = self.outputSize;
     
     AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetHighestQuality];
-    exporter.videoComposition = mainCompositionInst;
+//    exporter.videoComposition = mainCompositionInst;
     exporter.outputURL = [NSURL fileURLWithPath:self.outputFilePath];
     exporter.shouldOptimizeForNetworkUse = YES;
     exporter.outputFileType = AVFileTypeMPEG4;
