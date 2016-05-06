@@ -185,15 +185,21 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 - (void)setCompressionSettings {
     NSInteger numPixels = self.outputSize.width * self.outputSize.height;
-    NSInteger bitsPerPixel = 6.0;
+    //每像素比特
+    CGFloat bitsPerPixel = 6.0;
     NSInteger bitsPerSecond = numPixels * bitsPerPixel;
     
     // 码率和帧率设置
     NSDictionary *compressionProperties = @{ AVVideoAverageBitRateKey : @(bitsPerSecond),
                                     AVVideoExpectedSourceFrameRateKey : @(30),
-                                        AVVideoMaxKeyFrameIntervalKey : @(30) };
+                                        AVVideoAverageBitRateKey : @(30) };
     
+    CGSize videoSize = self.isBigSize ? CGSizeMake(720, 1280) : CGSizeMake(360, 480);
+    CGSize size = [PKShortVideoRecorder videoSize:videoSize requestedWidth:self.outputSize.width];
     self.videoCompressionSettings = @{ AVVideoCodecKey : AVVideoCodecH264,
+                                       AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill,
+                                       AVVideoWidthKey : @(self.outputSize.height),
+                                       AVVideoHeightKey : @(self.outputSize.width),
                        AVVideoCompressionPropertiesKey : compressionProperties };
     
     // 音频设置
@@ -201,6 +207,16 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
                                                        AVFormatIDKey : @(kAudioFormatMPEG4AAC),
                                                AVNumberOfChannelsKey : @(1),
                                                      AVSampleRateKey : @(22050) };
+}
+
++ (CGSize)videoSize:(CGSize)videoSize requestedWidth:(CGFloat)requestedWidth {
+    CGFloat ratio = videoSize.width / requestedWidth;
+    
+    if (ratio <= 1) {
+        return videoSize;
+    }
+    
+    return CGSizeMake(ceil(videoSize.width / ratio) , ceil(videoSize.height / ratio));
 }
 
 #pragma mark - SampleBufferDelegate methods
@@ -291,9 +307,10 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
                 dispatch_async( dispatch_get_main_queue(), ^{
                     @autoreleasepool {
                         [self.delegate recorderDidEndRecording:self];
+                        [self.delegate recorder:self didFinishRecordingToOutputFilePath:self.tempFilePath error:nil];
                     }
                 });
-                [self transformVideo];
+//                [self transformVideo];
             }
         }
     }
@@ -310,7 +327,6 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     NSError *error = nil;
     //初始
     AVAsset *asset = [AVAsset assetWithURL:[NSURL fileURLWithPath:self.tempFilePath]];
-    
     NSArray *trackArray = [asset tracksWithMediaType:AVMediaTypeVideo];
     if (!trackArray.count) {
         error = [NSError errorWithDomain:@"压缩视频失败" code:-1 userInfo:nil];
@@ -321,15 +337,20 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
         });
         return;
     }
+    
     AVAssetTrack *assetTrack = [trackArray objectAtIndex:0];
     //方向
     AVMutableVideoCompositionLayerInstruction *layerInstruciton = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:assetTrack];
     
-//    CGAffineTransform layerTransform = assetTrack.preferredTransform;
-    CGAffineTransform layerTransform = CGAffineTransformMake(0, 1, -1, 0, 480, 0);
-    [layerInstruciton setTransform:layerTransform atTime:kCMTimeZero];
+    CGSize videoSize = assetTrack.naturalSize;
+    CGFloat cropOffX = 0;
+    CGFloat cropOffY = 120;
+    CGAffineTransform finalTransform = CGAffineTransformMakeTranslation(0 - cropOffX, 0 - cropOffY);
     
-    // Export
+//    CGAffineTransform layerTransform = assetTrack.preferredTransform;
+//    CGAffineTransform layerTransform = CGAffineTransformMake(0, 1, -1, 0, 480, 0);
+    [layerInstruciton setTransform:finalTransform atTime:kCMTimeZero];
+    //编辑
     AVMutableVideoCompositionInstruction *mainInstruciton = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
     mainInstruciton.timeRange = CMTimeRangeMake(kCMTimeZero, asset.duration);
     mainInstruciton.layerInstructions = @[layerInstruciton];
@@ -337,14 +358,15 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     AVMutableVideoComposition *mainCompositionInst = [AVMutableVideoComposition videoComposition];
     mainCompositionInst.instructions = @[mainInstruciton];
     mainCompositionInst.frameDuration = CMTimeMake(1, 30);
-    mainCompositionInst.renderSize = self.outputSize;
+    CGSize size = CGSizeMake(self.outputSize.height, self.outputSize.width);
+    mainCompositionInst.renderSize = size;
     
     AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetHighestQuality];
-//    exporter.videoComposition = mainCompositionInst;
+    exporter.videoComposition = mainCompositionInst;
     exporter.outputURL = [NSURL fileURLWithPath:self.outputFilePath];
     exporter.shouldOptimizeForNetworkUse = YES;
     exporter.outputFileType = AVFileTypeMPEG4;
-    
+    //输出
     [exporter exportAsynchronouslyWithCompletionHandler:^(void) {
         if (exporter.status == AVAssetExportSessionStatusCompleted) {
             [fileManager removeItemAtPath:self.tempFilePath error:nil];
@@ -373,7 +395,12 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
 
 - (AVCaptureSession *)setupCaptureSession {
     AVCaptureSession *captureSession = [AVCaptureSession new];
-    captureSession.sessionPreset = AVCaptureSessionPresetMedium;
+    
+    if (self.isBigSize) {
+        captureSession.sessionPreset = AVCaptureSessionPresetMedium;//360 x 480 小视频一般不会超过此尺寸
+    } else {
+        captureSession.sessionPreset = AVCaptureSessionPreset1280x720;//720 x 1280 小视频一般不会超过此尺寸
+    }
     
     if (![self addDefaultCameraInputToCaptureSession:captureSession]){
         NSLog(@"加载摄像头失败");
@@ -451,5 +478,14 @@ typedef NS_ENUM( NSInteger, PKRecordingStatus ) {
     }
     return _previewLayer;
 }
+
+- (BOOL)isBigSize {
+    if (self.outputSize.width > 360 || self.outputSize.width/self.outputSize.height > 4/3) {
+        return YES;
+    } else {
+        return NO;
+    }
+}
+
 
 @end
