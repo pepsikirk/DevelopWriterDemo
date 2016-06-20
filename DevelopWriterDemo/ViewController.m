@@ -9,7 +9,7 @@
 #import "ViewController.h"
 #import "PKShortVideoViewController.h"
 
-@interface ViewController ()
+@interface ViewController () <PKRecordShortVideoDelegate>
 
 @end
 
@@ -37,8 +37,17 @@
     NSString *path = [paths[0] stringByAppendingPathComponent:[fileName stringByAppendingPathExtension:@"mp4"]];
 
     PKShortVideoViewController *viewController = [[PKShortVideoViewController alloc] initWithOutputFilePath:path outputSize:CGSizeMake(360, 640) themeColor:[UIColor colorWithRed:0/255.0 green:153/255.0 blue:255/255.0 alpha:1]];
+    viewController.delegate = self;
 
     [self presentViewController:viewController animated:YES completion:nil];
 }
+
+
+#pragma mark - PKRecordShortVideoDelegate
+
+- (void)didFinishRecordingToOutputFilePath:(NSString *)outputFilePath {
+    
+}
+
 
 @end
