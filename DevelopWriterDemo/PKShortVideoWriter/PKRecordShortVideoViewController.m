@@ -6,13 +6,15 @@
 //  Copyright © 2016年 pepsikirk. All rights reserved.
 //
 
-#import "PKShortVideoViewController.h"
+#import "PKRecordShortVideoViewController.h"
 #import "PKShortVideoRecorder.h"
 #import "PKShortVideoProgressBar.h"
-#import "PKUtiltiies.h"
 #import <AVFoundation/AVFoundation.h>
 #import "PKFullScreenPlayerViewController.h"
 #import "UIImage+PKShortVideoPlayer.h"
+
+#define kScreenWidth [UIScreen mainScreen].bounds.size.width
+#define kScreenHeight [UIScreen mainScreen].bounds.size.height
 
 static CGFloat PKOtherButtonVarticalHeight = 0;
 static CGFloat PKRecordButtonVarticalHeight = 0;
@@ -20,7 +22,7 @@ static CGFloat PKPreviewLayerHeight = 0;
 
 static CGFloat const PKRecordButtonWidth = 90;
 
-@interface PKShortVideoViewController() <PKShortVideoRecorderDelegate>
+@interface PKRecordShortVideoViewController() <PKShortVideoRecorderDelegate>
 
 @property (nonatomic, strong) NSString *outputFilePath;
 @property (nonatomic, assign) CGSize outputSize;
@@ -39,7 +41,7 @@ static CGFloat const PKRecordButtonWidth = 90;
 
 @end
 
-@implementation PKShortVideoViewController
+@implementation PKRecordShortVideoViewController
 
 #pragma mark - Init 
 
@@ -190,9 +192,9 @@ static CGFloat const PKRecordButtonWidth = 90;
     [self.recordButton setTitle:@"按住拍摄" forState:UIControlStateNormal];
     
     if (failture) {
-        [PKShortVideoViewController showAlertViewWithText:@"生成视频失败"];
+        [PKRecordShortVideoViewController showAlertViewWithText:@"生成视频失败"];
     } else {
-        [PKShortVideoViewController showAlertViewWithText:@"请长按超过1秒"];
+        [PKRecordShortVideoViewController showAlertViewWithText:@"请长按超过1秒"];
     }
     
     [[NSFileManager defaultManager] removeItemAtPath:Path error:nil];
